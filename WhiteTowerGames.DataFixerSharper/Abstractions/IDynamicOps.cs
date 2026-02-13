@@ -22,7 +22,7 @@ public interface IDynamicOps<T> : IDynamicOps
 
     #region Enumerables
     T CreateList(IEnumerable<T> elements);
-    DataResult<IReadOnlyList<T>> ReadAsStream(T input);
+    DataResult<IEnumerable<T>> ReadAsStream(T input);
     #endregion
 
     #region Maps
