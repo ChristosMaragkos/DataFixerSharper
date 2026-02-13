@@ -106,7 +106,10 @@ public sealed class JsonOps : IDynamicOps<JsonNode>
 
     public JsonNode AppendToPrefix(JsonNode prefix, JsonNode value)
     {
-        if (prefix == null || prefix == EmptyValue)
+        if (value == EmptyValue || IsEmptyObject(value))
+            return prefix;
+
+        if (prefix == EmptyValue || IsEmptyObject(prefix))
             return value;
 
         if (prefix is JsonObject prefixObj && value is JsonObject valObj)
@@ -118,6 +121,8 @@ public sealed class JsonOps : IDynamicOps<JsonNode>
         }
 
         return value;
+
+        bool IsEmptyObject(JsonNode node) => node is JsonObject obj && obj.Count == 0;
     }
 
     public JsonNode RemoveFromInput(JsonNode input, JsonNode value)
