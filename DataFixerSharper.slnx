@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="WhiteTowerGames.DataFixerSharper/WhiteTowerGames.DataFixerSharper.csproj" />
+  <Project Path="WhiteTowerGames.DataFixerSharper.Tests/WhiteTowerGames.DataFixerSharper.Tests.csproj" />
 </Solution>
