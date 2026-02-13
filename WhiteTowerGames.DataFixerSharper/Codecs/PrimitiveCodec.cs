@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
@@ -6,37 +7,38 @@ namespace WhiteTowerGames.DataFixerSharper.Codecs;
 // I hate it. But the alternative was a single codec for every primitive type, which I hated even more.
 internal class PrimitiveCodec<T> : Codec<T>
 {
-    private readonly Func<T, IDynamicOps, DataResult<object>> _encoder;
-    private readonly Func<IDynamicOps, object, DataResult<(T, object)>> _decoder;
+    private readonly object _encoder;
+    private readonly object _decoder;
 
-    public PrimitiveCodec(
-        Func<T, IDynamicOps, DataResult<object>> encoder,
-        Func<IDynamicOps, object, DataResult<(T, object)>> decoder
-    )
+    public PrimitiveCodec(object encoder, object decoder)
     {
         _encoder = encoder;
         _decoder = decoder;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override DataResult<(T, TFormat)> Decode<TFormat>(
         IDynamicOps<TFormat> ops,
         TFormat input
     )
     {
-        var decoded = _decoder(ops, input!);
+        var decoder = (Func<IDynamicOps, TFormat, DataResult<(T, TFormat)>>)_decoder;
+        var decoded = decoder(ops, input!);
         if (decoded.IsError)
             return DataResult<(T, TFormat)>.Fail(decoded.ErrorMessage);
 
         return decoded.Map<(T, TFormat)>(result => (result.Item1, (TFormat)(result.Item2)));
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override DataResult<TFormat> Encode<TFormat>(
         T input,
         IDynamicOps<TFormat> ops,
         TFormat prefix
     )
     {
-        var encoded = _encoder(input, ops);
+        var encoder = (Func<T, IDynamicOps, DataResult<TFormat>>)_encoder;
+        var encoded = encoder(input, ops);
         if (encoded.IsError)
             return DataResult<TFormat>.Fail(encoded.ErrorMessage);
 

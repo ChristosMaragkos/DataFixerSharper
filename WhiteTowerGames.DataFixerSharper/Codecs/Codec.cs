@@ -77,10 +77,8 @@ public abstract class Codec<T> : IEncoder<T>, IDecoder<T>
     public static Codec<T> Either(Codec<T> first, Codec<T> second) =>
         new EitherCodec<T>(first, second);
 
-    public static Codec<T> Primitive(
-        Func<T, IDynamicOps, DataResult<object>> encoder,
-        Func<IDynamicOps, object, DataResult<(T, object)>> decoder
-    ) => new PrimitiveCodec<T>(encoder, decoder);
+    public static Codec<T> Primitive(object encoder, object decoder) =>
+        new PrimitiveCodec<T>(encoder, decoder);
 
     /// <summary>
     /// Creates a codec that decodes to a constant value and does nothing when encoding.
