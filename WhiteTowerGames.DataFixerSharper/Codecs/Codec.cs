@@ -83,9 +83,5 @@ public abstract class Codec<T> : IEncoder<T>, IDecoder<T>
     /// <summary>
     /// Creates a codec that decodes to a constant value and does nothing when encoding.
     /// </summary>
-    public Codec<T> Constant(T value) =>
-        new PrimitiveCodec<T>(
-            (_, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).Empty()),
-            (ops, input) => DataResult<(T, object)>.Success((value, input))
-        );
+    public Codec<T> Constant(T value) => new ConstantCodec<T>(value);
 }
