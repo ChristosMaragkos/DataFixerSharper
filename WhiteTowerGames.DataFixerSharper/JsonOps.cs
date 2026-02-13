@@ -95,7 +95,7 @@ public sealed class JsonOps : IDynamicOps<JsonNode>
                 $"Expected a JSON string as a key, instead got {key.GetType().FullName}"
             );
 
-        var obj = new JsonObject { [keyStr] = value };
+        var obj = new JsonObject { [keyStr] = value.DeepClone() };
         return obj;
     }
 
