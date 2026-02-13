@@ -26,7 +26,7 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
                 "Input was not a valid dictionary/map."
             );
 
-        var map = mapResult.ResultOrPartial()!;
+        var map = mapResult.ResultOrPartial().ToArray();
 
         var dict = new Dictionary<TKey, TValue>();
 
@@ -49,7 +49,7 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
             var keyResult = decodedKey.GetOrThrow().Item1;
             var valResult = decodedVal.GetOrThrow().Item1;
             dict[keyResult] = valResult;
-            ops.RemoveFromInput(input, ops.Merge(kvp.Key, kvp.Value));
+            ops.RemoveFromInput(input, kvp.Key);
         }
         return DataResult<(Dictionary<TKey, TValue>, TFormat)>.Success((dict, input));
     }
