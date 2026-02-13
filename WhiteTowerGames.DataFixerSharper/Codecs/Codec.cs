@@ -12,7 +12,16 @@ public interface IDecoder<T>
     DataResult<(T, TFormat)> Decode<TFormat>(IDynamicOps<TFormat> ops, TFormat input);
 }
 
-public abstract class Codec<T> : IEncoder<T>, IDecoder<T>
+public abstract class Codec
+{
+    public static Codec<Dictionary<TKey, TValue>> Dictionary<TKey, TValue>(
+        Codec<TKey> keyCodec,
+        Codec<TValue> valueCodec
+    )
+        where TKey : notnull => new DictionaryCodec<TKey, TValue>(keyCodec, valueCodec);
+}
+
+public abstract class Codec<T> : Codec, IEncoder<T>, IDecoder<T>
 {
     public abstract DataResult<(T, TFormat)> Decode<TFormat>(
         IDynamicOps<TFormat> ops,
