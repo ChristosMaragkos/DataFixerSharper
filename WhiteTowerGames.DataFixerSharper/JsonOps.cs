@@ -5,7 +5,7 @@ namespace WhiteTowerGames.DataFixerSharper;
 
 public sealed class JsonOps : IDynamicOps<JsonNode>
 {
-    public static JsonOps? Instance { get; private set; }
+    public static JsonOps Instance { get; private set; }
 
     static JsonOps()
     {
