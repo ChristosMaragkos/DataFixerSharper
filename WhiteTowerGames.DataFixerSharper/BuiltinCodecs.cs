@@ -6,51 +6,37 @@ namespace WhiteTowerGames.DataFixerSharper;
 public static class BuiltinCodecs
 {
     public static readonly Codec<int> Int32 = Codec<int>.Primitive(
-        (input, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).CreateInt32(input)),
-        (ops, input) =>
-            DataResult<(int, object)>.Success(
-                ((((IDynamicOps<object>)ops).GetInt32(input)).GetOrThrow(), input) // My GOD I hate boxing. How do people write in Java?
-            )
+        (input, ops) => DataResult<object>.Success(ops.CreateInt32(input)),
+        (ops, input) => DataResult<(int, object)>.Success((ops.GetInt32(input).GetOrThrow(), input))
     );
 
     public static readonly Codec<long> Int64 = Codec<long>.Primitive(
-        (input, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).CreateInt64(input)),
+        (input, ops) => DataResult<object>.Success(ops.CreateInt64(input)),
         (ops, input) =>
-            DataResult<(long, object)>.Success(
-                ((((IDynamicOps<object>)ops).GetInt64(input)).GetOrThrow(), input)
-            )
+            DataResult<(long, object)>.Success((ops.GetInt64(input).GetOrThrow(), input))
     );
 
     public static readonly Codec<float> Float = Codec<float>.Primitive(
-        (input, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).CreateFloat(input)),
+        (input, ops) => DataResult<object>.Success(ops.CreateFloat(input)),
         (ops, input) =>
-            DataResult<(float, object)>.Success(
-                ((((IDynamicOps<object>)ops).GetFloat(input)).GetOrThrow(), input)
-            )
+            DataResult<(float, object)>.Success((ops.GetFloat(input).GetOrThrow(), input))
     );
 
     public static readonly Codec<double> Double = Codec<double>.Primitive(
-        (input, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).CreateDouble(input)),
+        (input, ops) => DataResult<object>.Success(ops.CreateDouble(input)),
         (ops, input) =>
-            DataResult<(double, object)>.Success(
-                ((((IDynamicOps<object>)ops).GetDouble(input)).GetOrThrow(), input)
-            )
+            DataResult<(double, object)>.Success((ops.GetDouble(input).GetOrThrow(), input))
     );
 
     public static readonly Codec<string> String = Codec<string>.Primitive(
-        (input, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).CreateString(input)),
+        (input, ops) => DataResult<object>.Success(ops.CreateString(input)),
         (ops, input) =>
-            DataResult<(string, object)>.Success(
-                ((((IDynamicOps<object>)ops).GetString(input)).GetOrThrow(), input)
-            )
+            DataResult<(string, object)>.Success((ops.GetString(input).GetOrThrow(), input))
     );
 
     public static readonly Codec<bool> Bool = Codec<bool>.Primitive(
-        (input, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).CreateBool(input)),
-        (ops, input) =>
-            DataResult<(bool, object)>.Success(
-                ((((IDynamicOps<object>)ops).GetBool(input)).GetOrThrow(), input)
-            )
+        (input, ops) => DataResult<object>.Success(ops.CreateBool(input)),
+        (ops, input) => DataResult<(bool, object)>.Success((ops.GetBool(input).GetOrThrow(), input))
     );
 
     public static Codec<TEnum> EnumByValue<TEnum>()
@@ -102,7 +88,7 @@ public static class BuiltinCodecs
         {
             var bits = Convert.ToUInt64(enumValue);
 
-            if (bits == 0 || (bits & (bits - 1)) != 0) // Evil bit hack
+            if (bits == 0 || (bits & (bits - 1)) != 0)
                 continue;
 
             if ((underlying & bits) == bits)
@@ -135,6 +121,20 @@ public static class BuiltinCodecs
             flags |= enumValue;
         }
 
-        return DataResult<TEnum>.Success((TEnum)(object)flags);
+        var underlyingType = Enum.GetUnderlyingType(typeof(TEnum));
+        object castValue = underlyingType switch
+        {
+            Type t when t == typeof(byte) => (TEnum)(object)(byte)flags,
+            Type t when t == typeof(sbyte) => (TEnum)(object)(sbyte)flags,
+            Type t when t == typeof(short) => (TEnum)(object)(short)flags,
+            Type t when t == typeof(ushort) => (TEnum)(object)(ushort)flags,
+            Type t when t == typeof(int) => (TEnum)(object)(int)flags,
+            Type t when t == typeof(uint) => (TEnum)(object)(uint)flags,
+            Type t when t == typeof(long) => (TEnum)(object)(long)flags,
+            Type t when t == typeof(ulong) => (TEnum)(object)flags,
+            _ => throw new InvalidOperationException("Unsupported enum underlying type"),
+        };
+
+        return DataResult<TEnum>.Success((TEnum)castValue);
     }
 }

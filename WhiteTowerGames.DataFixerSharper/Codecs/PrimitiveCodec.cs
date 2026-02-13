@@ -7,10 +7,13 @@ namespace WhiteTowerGames.DataFixerSharper.Codecs;
 // I hate it. But the alternative was a single codec for every primitive type, which I hated even more.
 internal class PrimitiveCodec<T> : Codec<T>
 {
-    private readonly object _encoder;
-    private readonly object _decoder;
+    private readonly Func<T, IDynamicOps, DataResult<object>> _encoder;
+    private readonly Func<IDynamicOps, object, DataResult<(T, object)>> _decoder;
 
-    public PrimitiveCodec(object encoder, object decoder)
+    public PrimitiveCodec(
+        Func<T, IDynamicOps, DataResult<object>> encoder,
+        Func<IDynamicOps, object, DataResult<(T, object)>> decoder
+    )
     {
         _encoder = encoder;
         _decoder = decoder;
@@ -22,12 +25,13 @@ internal class PrimitiveCodec<T> : Codec<T>
         TFormat input
     )
     {
-        var decoder = (Func<IDynamicOps, TFormat, DataResult<(T, TFormat)>>)_decoder;
-        var decoded = decoder(ops, input!);
+        var decoded = _decoder(ops, input!);
         if (decoded.IsError)
-            return DataResult<(T, TFormat)>.Fail(decoded.ErrorMessage);
+            return DataResult<(T, TFormat)>.Fail(
+                $"Failed to decode primitive value: {decoded.ErrorMessage}"
+            );
 
-        return decoded.Map<(T, TFormat)>(result => (result.Item1, (TFormat)(result.Item2)));
+        return decoded.Map<(T, TFormat)>(result => (result.Item1, (TFormat)result.Item2));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,11 +41,12 @@ internal class PrimitiveCodec<T> : Codec<T>
         TFormat prefix
     )
     {
-        var encoder = (Func<T, IDynamicOps, DataResult<TFormat>>)_encoder;
-        var encoded = encoder(input, ops);
+        var encoded = _encoder(input, ops);
         if (encoded.IsError)
-            return DataResult<TFormat>.Fail(encoded.ErrorMessage);
+            return DataResult<TFormat>.Fail(
+                $"Failed to encode primitive value: {encoded.ErrorMessage}"
+            );
 
-        return encoded.Map(obj => (TFormat)obj);
+        return encoded.Map<TFormat>(obj => (TFormat)obj);
     }
 }
