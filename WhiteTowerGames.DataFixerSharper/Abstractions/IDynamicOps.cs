@@ -1,5 +1,8 @@
+using System.ComponentModel;
+
 namespace WhiteTowerGames.DataFixerSharper.Abstractions;
 
+[EditorBrowsable(EditorBrowsableState.Never)]
 public interface IDynamicOps;
 
 public interface IDynamicOps<T> : IDynamicOps
