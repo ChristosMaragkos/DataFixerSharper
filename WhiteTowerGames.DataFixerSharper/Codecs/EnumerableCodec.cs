@@ -50,7 +50,7 @@ internal class EnumerableCodec<T> : Codec<IEnumerable<T>>
         var encodedElements = new List<TFormat>();
         foreach (var item in input)
         {
-            var encoded = _underlying.EncodeSingle(ops, item);
+            var encoded = _underlying.EncodeStart(ops, item);
             if (encoded.IsError)
                 return DataResult<TFormat>.Fail(
                     $"Failed to encode element: {encoded.ErrorMessage}",

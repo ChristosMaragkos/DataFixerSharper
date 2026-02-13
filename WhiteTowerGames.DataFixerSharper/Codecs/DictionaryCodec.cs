@@ -64,14 +64,14 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
 
         foreach (var kvp in input)
         {
-            var encodedKey = _keyCodec.EncodeSingle(ops, kvp.Key);
+            var encodedKey = _keyCodec.EncodeStart(ops, kvp.Key);
             if (encodedKey.IsError)
                 return DataResult<TFormat>.Fail(
                     $"Failed to encode key [{encodedKey.ErrorMessage}]",
                     ops.CreateMap(encodedMap)
                 );
 
-            var encodedValue = _valueCodec.EncodeSingle(ops, kvp.Value);
+            var encodedValue = _valueCodec.EncodeStart(ops, kvp.Value);
             if (encodedValue.IsError)
                 return DataResult<TFormat>.Fail(
                     $"Failed to encode value [{encodedValue.ErrorMessage}]",

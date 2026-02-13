@@ -25,7 +25,7 @@ public abstract class Codec<T> : IEncoder<T>, IDecoder<T>
         TFormat prefix
     );
 
-    public DataResult<TFormat> EncodeSingle<TFormat>(IDynamicOps<TFormat> ops, T input) =>
+    public DataResult<TFormat> EncodeStart<TFormat>(IDynamicOps<TFormat> ops, T input) =>
         Encode(input, ops, ops.Empty());
 
     public DataResult<T> Parse<TFormat>(IDynamicOps<TFormat> ops, TFormat input) =>
