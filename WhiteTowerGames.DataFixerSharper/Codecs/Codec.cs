@@ -82,5 +82,12 @@ public abstract class Codec<T> : IEncoder<T>, IDecoder<T>
         Func<IDynamicOps, object, DataResult<(T, object)>> decoder
     ) => new PrimitiveCodec<T>(encoder, decoder);
 
-    // TODO: Unit codec (encodes to empty, decodest to constant)
+    /// <summary>
+    /// Creates a codec that decodes to a constant value and does nothing when encoding.
+    /// </summary>
+    public Codec<T> Constant(T value) =>
+        new PrimitiveCodec<T>(
+            (_, ops) => DataResult<object>.Success(((IDynamicOps<object>)ops).Empty()),
+            (ops, input) => DataResult<(T, object)>.Success((value, input))
+        );
 }
