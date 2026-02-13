@@ -12,7 +12,7 @@ public sealed class JsonOps : IDynamicOps<JsonNode>
         Instance = new();
     }
 
-    private static readonly JsonNode EmptyValue = JsonValue.Create((string?)null)!;
+    private static readonly JsonNode EmptyValue = JsonValue.Create("{}");
 
     public JsonNode Empty() => EmptyValue;
 
