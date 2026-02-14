@@ -107,8 +107,6 @@ public class CodecBuilding
         var encoded = FriendGroupCodec.EncodeStart(JsonOps, group);
         var decoded = FriendGroupCodec.Parse(JsonOps, encoded.GetOrThrow());
 
-        Console.WriteLine(encoded.GetOrThrow().ToJsonString());
-
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
         Assert.False(decoded.IsError, decoded.ErrorMessage);
