@@ -22,7 +22,7 @@ internal class EnumerableCodec<T> : Codec<IEnumerable<T>>
                 $"Not a valid array: {streamResult.ErrorMessage}"
             );
 
-        var stream = streamResult.GetOrThrow();
+        var stream = streamResult.ResultOrPartial();
         var result = new List<T>();
 
         foreach (var item in stream)
@@ -34,7 +34,11 @@ internal class EnumerableCodec<T> : Codec<IEnumerable<T>>
                     (result, input)
                 );
 
-            result.Add(decoded.GetOrThrow());
+            result.Add(
+                decoded.IsError
+                    ? _underlying.Parse(ops, ops.Empty()).GetOrThrow()
+                    : decoded.ResultOrPartial()
+            );
             ops.RemoveFromInput(input, item);
         }
 
