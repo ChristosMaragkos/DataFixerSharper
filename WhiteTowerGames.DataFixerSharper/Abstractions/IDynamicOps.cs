@@ -13,6 +13,7 @@ public interface IDynamicOps
     DataResult<decimal> GetNumber(object input);
     DataResult<string> GetString(object input);
     DataResult<bool> GetBool(object input);
+    DataResult<object> GetValue(object input, string name);
 
     object CreateList(IEnumerable<object> elements);
     DataResult<IEnumerable<object>> ReadAsStream(object input);
@@ -39,6 +40,7 @@ public interface IDynamicOps<T> : IDynamicOps
     DataResult<decimal> GetNumber(T input);
     DataResult<string> GetString(T input);
     DataResult<bool> GetBool(T input);
+    DataResult<T> GetValue(T input, string name);
     #endregion
 
     #region Enumerables
@@ -73,6 +75,8 @@ public interface IDynamicOps<T> : IDynamicOps
     DataResult<decimal> IDynamicOps.GetNumber(object input) => GetNumber((T)input);
     DataResult<string> IDynamicOps.GetString(object input) => GetString((T)input);
     DataResult<bool> IDynamicOps.GetBool(object input) => GetBool((T)input);
+    DataResult<object> IDynamicOps.GetValue(object input, string name) =>
+        GetValue((T)input, name).Map(result => (object)result!);
 
     object IDynamicOps.CreateList(IEnumerable<object> elements) =>
         CreateList((IEnumerable<T>)elements)!;

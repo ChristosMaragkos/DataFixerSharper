@@ -115,7 +115,7 @@ public sealed class JsonOps : IDynamicOps<JsonNode>
         if (prefix is JsonObject prefixObj && value is JsonObject valObj)
         {
             foreach (var kv in valObj)
-                prefixObj[kv.Key] = kv.Value!;
+                prefixObj[kv.Key] = kv.Value!.DeepClone();
 
             return prefixObj;
         }
@@ -134,5 +134,16 @@ public sealed class JsonOps : IDynamicOps<JsonNode>
         }
 
         return input;
+    }
+
+    public DataResult<JsonNode> GetValue(JsonNode input, string name)
+    {
+        if (input is not JsonObject obj || input == EmptyValue)
+            return DataResult<JsonNode>.Fail("Input is not a JSON object with key-value pairs");
+
+        if (!obj.TryGetPropertyValue(name, out var prop))
+            return DataResult<JsonNode>.Fail($"Input does not contain a key named {name}");
+
+        return DataResult<JsonNode>.Success(prop!);
     }
 }
