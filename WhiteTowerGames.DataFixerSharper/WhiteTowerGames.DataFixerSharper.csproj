@@ -7,6 +7,18 @@
     <PackageId>DataFixerSharper</PackageId>
     <Version>1.0.0</Version>
     <Author>Christos Maragkos</Author>
+    <Owner>Christos Maragkos</Owner>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/ChristosMaragkos/DataFixerSharper</RepositoryUrl>
   </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../LICENSE" Pack="true" PackagePath="\"/>
+    </ItemGroup>
 
 </Project>
