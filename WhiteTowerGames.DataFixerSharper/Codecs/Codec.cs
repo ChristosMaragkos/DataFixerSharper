@@ -19,6 +19,19 @@ public abstract class Codec
         Codec<TValue> valueCodec
     )
         where TKey : notnull => new DictionaryCodec<TKey, TValue>(keyCodec, valueCodec);
+
+    public static Codec<T> Dispatch<T, TDis>(
+        Codec<TDis> discriminatorCodec,
+        Func<T, TDis> discriminatorGetter,
+        Func<TDis, Codec<T>> codecGetter,
+        string discriminatorKeyName = "type"
+    ) =>
+        new DispatchCodec<T, TDis>(
+            discriminatorGetter,
+            discriminatorCodec,
+            codecGetter,
+            discriminatorKeyName
+        );
 }
 
 public abstract class Codec<T> : Codec, IEncoder<T>, IDecoder<T>
@@ -40,13 +53,6 @@ public abstract class Codec<T> : Codec, IEncoder<T>, IDecoder<T>
     public DataResult<T> Parse<TFormat>(IDynamicOps<TFormat> ops, TFormat input) =>
         Decode(ops, input).Map(pair => pair.Item1);
 
-    /// <summary>
-    /// Creates a Codec for IEnumerable<T> by recursively applying the existing Codec<T>.
-    /// </summary>
-    /// <remarks>
-    /// Encoding and decoding of all enumerable codec types is best-effort. The process stops on the first error,
-    /// and you get the partial result on failure.
-    /// </remarks>
     public Codec<IEnumerable<T>> ForEnumerable() => new EnumerableCodec<T>(this);
 
     public Codec<List<T>> ForList() =>
@@ -95,4 +101,16 @@ public abstract class Codec<T> : Codec, IEncoder<T>, IDecoder<T>
     /// Creates a codec that decodes to a constant value and does nothing when encoding.
     /// </summary>
     public Codec<T> Constant(T value) => new ConstantCodec<T>(value);
+}
+
+public static class CodecExtensions
+{
+    /// <summary>
+    /// Creates a codec that upcasts the targeted type into a less specific one (for example Square -> Shape)
+    /// </summary>
+    public static Codec<TBase> Upcast<TDer, TBase>(this Codec<TDer> codec)
+        where TDer : TBase
+    {
+        return new UpcastCodec<TBase, TDer>(codec);
+    }
 }
