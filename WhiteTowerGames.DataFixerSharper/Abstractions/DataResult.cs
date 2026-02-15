@@ -12,7 +12,10 @@ public readonly struct DataResult<T>
 
     public T ResultOrPartial() => GetOrThrow();
 
-    public string ErrorMessage => _isError ? _errorMessage : throw new InvalidOperationException();
+    public string ErrorMessage =>
+        _isError
+            ? $"DataResult[{typeof(T)}] Fail: {_errorMessage}"
+            : $"DataResult[{typeof(T)}] Success";
 
     public static DataResult<T> Success(T value) => new(value, null, false);
 
