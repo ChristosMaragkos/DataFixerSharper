@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
@@ -19,7 +18,6 @@ internal class PrimitiveCodec<T> : Codec<T>
         _decoder = decoder;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override DataResult<(T, TFormat)> Decode<TFormat>(
         IDynamicOps<TFormat> ops,
         TFormat input
@@ -34,7 +32,6 @@ internal class PrimitiveCodec<T> : Codec<T>
         return decoded.Map<(T, TFormat)>(result => (result.Item1, (TFormat)result.Item2));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override DataResult<TFormat> Encode<TFormat>(
         T input,
         IDynamicOps<TFormat> ops,
