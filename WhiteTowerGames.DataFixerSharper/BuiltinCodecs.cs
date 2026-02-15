@@ -113,8 +113,7 @@ public static class BuiltinCodecs
         {
             if (!Enum.TryParse(typeof(TEnum), str, false, out var value))
                 return DataResult<TEnum>.Fail(
-                    $"Parsed string value '{str}' does not match and members of enum {typeof(TEnum).FullName}",
-                    (TEnum)(object)flags
+                    $"Parsed string value '{str}' does not match and members of enum {typeof(TEnum).FullName}"
                 );
 
             var enumValue = Convert.ToUInt64(value);

@@ -1,159 +1,46 @@
 namespace WhiteTowerGames.DataFixerSharper.Abstractions;
 
-public abstract class DataResult<T>
+public readonly struct DataResult<T>
 {
-    public static DataResult<T> Success(T value) => new SuccessResult(value);
+    private readonly T _value;
+    private readonly string _errorMessage;
+    private readonly bool _isError;
 
-    public static DataResult<T> Fail(string message, T? partialResult = default)
+    public bool IsError => _isError;
+
+    public T GetOrThrow() => !_isError ? _value : throw new InvalidOperationException();
+
+    public T ResultOrPartial() => GetOrThrow();
+
+    public string ErrorMessage => _isError ? _errorMessage : throw new InvalidOperationException();
+
+    public static DataResult<T> Success(T value) => new(value, null, false);
+
+    public static DataResult<T> Fail(string errorMessage) => new(default!, errorMessage, true);
+
+    public DataResult(T value, string? errorMessage, bool isError)
     {
-        if (partialResult == null)
-            return new ErrorResult(message);
-
-        return new ErrorResult(message, partialResult);
+        _value = value;
+        _errorMessage = errorMessage ?? "";
+        _isError = isError;
     }
 
-    /// <summary>
-    /// Returns the result on success, throws an InvalidOperationException on fail.
-    /// </summary>
-    public abstract T GetOrThrow();
-
-    /// <summary>
-    /// Returns the result on success, or a default value on fail.
-    /// </summary>
-    public abstract T GetOrDefault(T defaultValue);
-
-    public abstract T ResultOrPartial();
-
-    /// <summary>
-    /// Returns the result on success, consumes an error message and returns null on fail
-    /// </summary>
-    public abstract T? ResultOrConsume(Action<string> onError);
-
-    /// <summary>
-    /// Applies a function on the result on success or a function on this instance of DataResult on fail.
-    /// </summary>
-    public abstract DataResult<T> Evaluate<TResult>(
-        Action<T> successFunc,
-        Action<DataResult<T>> errorFunc
-    );
-
-    public abstract string ErrorMessage { get; }
-    public abstract bool IsSuccess { get; }
-    public abstract bool IsError { get; }
-
-    /// <summary>
-    /// Maps the value of this DataResult to another type
-    /// </summary>
-    public abstract DataResult<TOther> Map<TOther>(Func<T, TOther> converter);
-
-    /// <summary>
-    /// Maps the value of this DataResult to a DataResult of another type
-    /// </summary>
-    public abstract DataResult<TOther> UnsafeMap<TOther>(Func<T, DataResult<TOther>> converter);
-
-    private class SuccessResult : DataResult<T>
+    public DataResult<TOther> Map<TOther>(Func<T, TOther> mapper)
     {
-        private readonly T _value;
+        if (IsError)
+            return DataResult<TOther>.Fail(_errorMessage);
 
-        public SuccessResult(T value)
-        {
-            _value = value;
-        }
-
-        public override bool IsSuccess => true;
-
-        public override bool IsError => false;
-
-        public override string ErrorMessage => "Success!";
-
-        public override DataResult<T> Evaluate<TResult>(
-            Action<T> successFunc,
-            Action<DataResult<T>> errorFunc
-        )
-        {
-            errorFunc(this);
-            return this;
-        }
-
-        public override T GetOrDefault(T defaultValue) => _value;
-
-        public override T GetOrThrow() => _value;
-
-        public override T ResultOrPartial() => _value;
-
-        public override DataResult<TOther> Map<TOther>(Func<T, TOther> converter) =>
-            DataResult<TOther>.Success(converter(_value));
-
-        public override T? ResultOrConsume(Action<string> onError) => _value;
-
-        public override string ToString() => $"Success[{_value}]";
-
-        public override DataResult<TOther> UnsafeMap<TOther>(Func<T, DataResult<TOther>> converter)
-        {
-            return converter(_value);
-        }
+        return DataResult<TOther>.Success(mapper(_value));
     }
 
-    private class ErrorResult : DataResult<T>
+    public DataResult<TOther> UnsafeMap<TOther>(Func<T, DataResult<TOther>> mapper)
     {
-        private readonly string _message;
-        private readonly T? _partialResult;
-        private readonly bool _hasPartial;
+        var mapped = mapper(_value);
+        if (IsError)
+            return DataResult<TOther>.Fail(_errorMessage);
+        else if (mapped.IsError)
+            return DataResult<TOther>.Fail(mapped.ErrorMessage);
 
-        public ErrorResult(string message)
-        {
-            _message = message;
-            _hasPartial = false;
-            _partialResult = default;
-        }
-
-        public ErrorResult(string message, T partialResult)
-        {
-            _message = message;
-            _hasPartial = true;
-            _partialResult = partialResult;
-        }
-
-        public override string ErrorMessage => _message;
-
-        public override bool IsSuccess => false;
-
-        public override bool IsError => true;
-
-        public override DataResult<T> Evaluate<TResult>(
-            Action<T> successFunc,
-            Action<DataResult<T>> errorFunc
-        )
-        {
-            errorFunc(this);
-            return this;
-        }
-
-        public override T GetOrDefault(T defaultValue) => defaultValue;
-
-        public override T ResultOrPartial() => _hasPartial ? _partialResult! : default!;
-
-        public override T GetOrThrow() =>
-            throw new InvalidOperationException($"DataResult error: {_message}");
-
-        public override DataResult<TOther> Map<TOther>(Func<T, TOther> converter)
-        {
-            if (_hasPartial)
-                return DataResult<TOther>.Fail(_message, converter(_partialResult!));
-
-            return DataResult<TOther>.Fail(_message);
-        }
-
-        public override T? ResultOrConsume(Action<string> onError)
-        {
-            onError(_message);
-            return default;
-        }
-
-        public override string ToString() => $"Error[{_message}]";
-
-        public override DataResult<TOther> UnsafeMap<TOther>(
-            Func<T, DataResult<TOther>> converter
-        ) => DataResult<TOther>.Fail(_message);
+        return DataResult<TOther>.Success(mapped.GetOrThrow());
     }
 }

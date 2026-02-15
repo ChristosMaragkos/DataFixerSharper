@@ -35,15 +35,13 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
             var decodedKey = _keyCodec.Decode(ops, kvp.Key);
             if (decodedKey.IsError)
                 return DataResult<(Dictionary<TKey, TValue>, TFormat)>.Fail(
-                    $"Failed to decode key [{decodedKey.ErrorMessage}]",
-                    (dict, input)
+                    $"Failed to decode key [{decodedKey.ErrorMessage}]"
                 );
 
             var decodedVal = _valueCodec.Decode(ops, kvp.Value);
             if (decodedVal.IsError)
                 return DataResult<(Dictionary<TKey, TValue>, TFormat)>.Fail(
-                    $"Failed to decode value [{decodedVal.ErrorMessage}]",
-                    (dict, input)
+                    $"Failed to decode value [{decodedVal.ErrorMessage}]"
                 );
 
             var keyResult = decodedKey.GetOrThrow().Item1;
@@ -67,15 +65,13 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
             var encodedKey = _keyCodec.EncodeStart(ops, kvp.Key);
             if (encodedKey.IsError)
                 return DataResult<TFormat>.Fail(
-                    $"Failed to encode key [{encodedKey.ErrorMessage}]",
-                    ops.CreateMap(encodedMap)
+                    $"Failed to encode key [{encodedKey.ErrorMessage}]"
                 );
 
             var encodedValue = _valueCodec.EncodeStart(ops, kvp.Value);
             if (encodedValue.IsError)
                 return DataResult<TFormat>.Fail(
-                    $"Failed to encode value [{encodedValue.ErrorMessage}]",
-                    ops.CreateMap(encodedMap)
+                    $"Failed to encode value [{encodedValue.ErrorMessage}]"
                 );
 
             encodedMap.Add(new(encodedKey.GetOrThrow(), encodedValue.GetOrThrow()));

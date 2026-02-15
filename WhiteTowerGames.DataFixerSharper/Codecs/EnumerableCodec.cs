@@ -30,8 +30,7 @@ internal class EnumerableCodec<T> : Codec<IEnumerable<T>>
             var decoded = _underlying.Parse(ops, item);
             if (decoded.IsError)
                 return DataResult<(IEnumerable<T>, TFormat)>.Fail(
-                    $"Failed to decode element: {decoded.ErrorMessage}",
-                    (result, input)
+                    $"Failed to decode element: {decoded.ErrorMessage}"
                 );
 
             result.Add(
@@ -57,8 +56,7 @@ internal class EnumerableCodec<T> : Codec<IEnumerable<T>>
             var encoded = _underlying.EncodeStart(ops, item);
             if (encoded.IsError)
                 return DataResult<TFormat>.Fail(
-                    $"Failed to encode element: {encoded.ErrorMessage}",
-                    ops.CreateList(encodedElements)
+                    $"Failed to encode element: {encoded.ErrorMessage}"
                 );
             var result = encoded.GetOrThrow();
 
