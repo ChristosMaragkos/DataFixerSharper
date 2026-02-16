@@ -51,12 +51,19 @@ public class CodecBenchmarks
                 .WithCtor(people => new FriendGroup(people))
         );
 
-    private static readonly Codec<Person[]> ArrayPersonCodec = PersonCodec.ForArray();
+    private static readonly Codec<int[]> IntegerArrayCodec = BuiltinCodecs.Int32.ForArray();
+    private static readonly int[] Integers = new int[] { 1, 2, 3 };
 
     [Benchmark]
     public void STJ_Serialize()
     {
         JsonSerializer.Serialize(Giannakhs);
+    }
+
+    [Benchmark]
+    public void STJ_Serialize_IntArray()
+    {
+        JsonSerializer.Serialize(Integers);
     }
 
     [Benchmark]
@@ -66,20 +73,42 @@ public class CodecBenchmarks
     }
 
     [Benchmark]
+    public void STJ_Deserialize_IntArray()
+    {
+        JsonSerializer.Deserialize<int[]>("[1,2,3]");
+    }
+
+    [Benchmark]
     public void Codec_Serialize()
     {
-        PersonCodec.EncodeStart(JsonOps, Giannakhs);
+        PersonCodec.EncodeStart<JsonOps, ReadOnlyMemory<byte>>(JsonOps, Giannakhs);
     }
 
     [Benchmark]
     public void Codec_Deserialize()
     {
-        PersonCodec.Parse(JsonOps, Mem);
+        PersonCodec.Parse<JsonOps, ReadOnlyMemory<byte>>(JsonOps, MemoryPerson);
     }
 
-    private static readonly ReadOnlyMemory<byte> Mem = new ReadOnlyMemory<byte>(
+    private static readonly ReadOnlyMemory<byte> MemoryPerson = new ReadOnlyMemory<byte>(
         Encoding.UTF8.GetBytes("""{"Name":"John","Age":10}""")
     );
+
+    private static readonly ReadOnlyMemory<byte> MemoryIntegers = new ReadOnlyMemory<byte>(
+        Encoding.UTF8.GetBytes("{[1,2,3]}")
+    );
+
+    [Benchmark]
+    public void Codec_Serialize_IntArray()
+    {
+        IntegerArrayCodec.EncodeStart<JsonOps, ReadOnlyMemory<byte>>(JsonOps, Integers);
+    }
+
+    [Benchmark]
+    public void Codec_Deserialize_IntArray()
+    {
+        IntegerArrayCodec.Parse<JsonOps, ReadOnlyMemory<byte>>(JsonOps, MemoryIntegers);
+    }
 }
 
 internal class Program
