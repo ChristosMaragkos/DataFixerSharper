@@ -1,20 +1,18 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using WhiteTowerGames.DataFixerSharper;
 using WhiteTowerGames.DataFixerSharper.Codecs;
 using WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
+using WhiteTowerGames.DataFixerSharper.Json;
 
 namespace Benchmarks;
 
 [MemoryDiagnoser]
 public class CodecBenchmarks
 {
-    private static readonly Person[] People = new Person[1000];
-
     private static readonly Person Giannakhs = new Person("John", 10);
-
-    private static readonly string[] SerializedPeople = new string[1000];
 
     private static readonly JsonOps JsonOps = JsonOps.Instance;
 
@@ -76,8 +74,12 @@ public class CodecBenchmarks
     [Benchmark]
     public void Codec_Deserialize()
     {
-        PersonCodec.Parse(JsonOps, """{"Name":"John","Age":10}""");
+        PersonCodec.Parse(JsonOps, Mem);
     }
+
+    private static readonly ReadOnlyMemory<byte> Mem = new ReadOnlyMemory<byte>(
+        Encoding.UTF8.GetBytes("""{"Name":"John","Age":10}""")
+    );
 }
 
 internal class Program

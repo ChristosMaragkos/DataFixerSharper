@@ -1,3 +1,5 @@
+using WhiteTowerGames.DataFixerSharper.Json;
+
 namespace WhiteTowerGames.DataFixerSharper.Tests.Enums;
 
 public class EnumCodecs
@@ -81,7 +83,7 @@ public class EnumCodecs
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
-        Assert.All(encoded.AsArray().ToArray(), node => flagsArray.Contains(node!.ToString()));
+        Assert.All(encoded.ToJsonArray(), node => flagsArray.Contains(node!.ToString()));
         Assert.Equal(decoded, bitflags);
     }
 

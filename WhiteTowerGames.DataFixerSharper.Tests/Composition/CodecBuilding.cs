@@ -1,5 +1,6 @@
 using WhiteTowerGames.DataFixerSharper.Codecs;
 using WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
+using WhiteTowerGames.DataFixerSharper.Json;
 
 namespace WhiteTowerGames.DataFixerSharper.Tests.Composition;
 
@@ -7,7 +8,7 @@ public class CodecBuilding
 {
     private static readonly JsonOps JsonOps = JsonOps.Instance;
 
-    public sealed record Person(string Name, int Age = 0);
+    public sealed record Person(string Name, int Age);
 
     public sealed record Relationship(Person Person1, Person Person2);
 
@@ -16,7 +17,7 @@ public class CodecBuilding
     public static IEnumerable<object[]> People()
     {
         yield return new object[] { new Person("John Doe", 18) };
-        yield return new object[] { new Person("Jane Doe") };
+        yield return new object[] { new Person("Jane Doe", 0) };
     }
 
     private static readonly Codec<Person> PersonCodec = RecordCodecBuilder.Create<Person>(
@@ -75,8 +76,14 @@ public class CodecBuilding
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
-        Assert.False(decoded.IsError, decoded.ErrorMessage);
-        Assert.True(decoded.GetOrThrow().SequenceEqual(people));
+        Assert.False(
+            decoded.IsError,
+            decoded.ErrorMessage + $"\n{encoded.GetOrThrow().ToJsonString()}"
+        );
+        Assert.True(
+            decoded.GetOrThrow().SequenceEqual(people),
+            encoded.GetOrThrow().ToJsonString()
+        );
     }
 
     [Theory]

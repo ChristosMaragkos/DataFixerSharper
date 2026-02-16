@@ -1,3 +1,6 @@
+using System.Text;
+using WhiteTowerGames.DataFixerSharper.Json;
+
 namespace WhiteTowerGames.DataFixerSharper.Tests.Primitives;
 
 public class PrimitiveCodecs
@@ -98,7 +101,7 @@ public class PrimitiveCodecs
         var encoded = codec.EncodeStart(JsonOps, 120).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
-        Assert.Equal("{}", encoded.ToString());
+        Assert.Equal(Encoding.UTF8.GetBytes("{}"), encoded);
         Assert.Equal(42, decoded);
     }
 }

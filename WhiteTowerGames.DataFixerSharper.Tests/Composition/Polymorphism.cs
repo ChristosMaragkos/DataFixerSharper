@@ -1,5 +1,6 @@
 using WhiteTowerGames.DataFixerSharper.Codecs;
 using WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
+using WhiteTowerGames.DataFixerSharper.Json;
 
 namespace WhiteTowerGames.DataFixerSharper.Tests.Composition;
 

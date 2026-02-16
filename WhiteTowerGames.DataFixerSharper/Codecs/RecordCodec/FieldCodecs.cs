@@ -41,7 +41,11 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
     {
         var fieldResult = ops.GetValue(input, _name);
         if (fieldResult.IsError)
+        {
+            Console.WriteLine("field not found");
+            Console.WriteLine(fieldResult.ErrorMessage);
             return DataResult<(TField, TFormat)>.Fail(fieldResult.ErrorMessage);
+        }
 
         var parsed = _codec.Parse(ops, fieldResult.GetOrThrow());
         if (parsed.IsError)
@@ -84,7 +88,11 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
     {
         var fieldResult = ops.GetValue(input, _name);
         if (fieldResult.IsError)
+        {
+            Console.WriteLine("field not found");
+            Console.WriteLine(fieldResult.ErrorMessage);
             return DataResult<(TField, TFormat)>.Success((_defaultValue, input));
+        }
 
         var parsed = _codec.Parse(ops, fieldResult.GetOrThrow());
         if (parsed.IsError)
@@ -105,8 +113,8 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         if (valueResult.IsError)
             return valueResult;
 
-        ops.MergeAndAppend(prefix, key, valueResult.GetOrThrow());
+        var appended = ops.MergeAndAppend(prefix, key, valueResult.GetOrThrow());
 
-        return DataResult<TFormat>.Success(prefix);
+        return DataResult<TFormat>.Success(appended);
     }
 }

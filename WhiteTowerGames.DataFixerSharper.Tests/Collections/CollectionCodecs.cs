@@ -1,4 +1,5 @@
 using WhiteTowerGames.DataFixerSharper.Codecs;
+using WhiteTowerGames.DataFixerSharper.Json;
 
 namespace WhiteTowerGames.DataFixerSharper.Tests.Collections;
 

@@ -1,6 +1,7 @@
 using System.Numerics;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 using WhiteTowerGames.DataFixerSharper.Codecs;
+using WhiteTowerGames.DataFixerSharper.Json;
 
 namespace WhiteTowerGames.DataFixerSharper.Tests.CodecMapping;
 
@@ -28,7 +29,7 @@ public class Mappers
         // When
         var encoded = codec.EncodeStart(JsonOps, vec).GetOrThrow();
         var encodedArray = encoded
-            .AsArray()
+            .ToJsonArray()
             .Select(node => float.Parse(node!.ToJsonString()))
             .ToArray();
 
