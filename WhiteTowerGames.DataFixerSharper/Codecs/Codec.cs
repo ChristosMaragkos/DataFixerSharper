@@ -2,16 +2,6 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
 
-public interface IEncoder<T>
-{
-    DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix);
-}
-
-public interface IDecoder<T>
-{
-    DataResult<(T, TFormat)> Decode<TFormat>(IDynamicOps<TFormat> ops, TFormat input);
-}
-
 public abstract class Codec
 {
     public static Codec<Dictionary<TKey, TValue>> Dictionary<TKey, TValue>(
@@ -34,38 +24,21 @@ public abstract class Codec
         );
 }
 
-public abstract class Codec<T> : Codec, IEncoder<T>, IDecoder<T>
+public abstract class Codec<T> : Codec
 {
-    public abstract DataResult<(T, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    );
+    public abstract DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>;
 
-    public abstract DataResult<TFormat> Encode<TFormat>(
-        T input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    );
+    public abstract DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>;
 
-    public DataResult<TFormat> EncodeStart<TFormat>(IDynamicOps<TFormat> ops, T input) =>
-        Encode(input, ops, ops.Empty());
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
+        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
 
-    public DataResult<T> Parse<TFormat>(IDynamicOps<TFormat> ops, TFormat input) =>
-        Decode(ops, input).Map(pair => pair.Item1);
+    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat> => Decode(ops, input).Map(pair => pair.Item1);
 
-    public Codec<IEnumerable<T>> ForEnumerable() => new EnumerableCodec<T>(this);
-
-    public Codec<List<T>> ForList() =>
-        ForEnumerable()
-            .SafeMap<List<T>>(list => list.AsEnumerable(), enumerable => enumerable.ToList());
-
-    public Codec<HashSet<T>> ForHashSet() =>
-        ForEnumerable()
-            .SafeMap<HashSet<T>>(set => set.AsEnumerable(), enumerable => enumerable.ToHashSet());
-
-    public Codec<T[]> ForArray() =>
-        ForEnumerable()
-            .SafeMap<T[]>(array => array.AsEnumerable(), enumerable => enumerable.ToArray());
+    public Codec<List<T>> ForList() => new ListCodec<T>(this);
 
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T <-> TOther always valid.
     public Codec<TOther> SafeMap<TOther>(Func<TOther, T> from, Func<T, TOther> to) =>
@@ -91,11 +64,6 @@ public abstract class Codec<T> : Codec, IEncoder<T>, IDecoder<T>
 
     public static Codec<T> Either(Codec<T> first, Codec<T> second) =>
         new EitherCodec<T>(first, second);
-
-    public static Codec<T> Primitive(
-        Func<T, IDynamicOps, DataResult<object>> encoder,
-        Func<IDynamicOps, object, DataResult<(T, object)>> decoder
-    ) => new PrimitiveCodec<T>(encoder, decoder);
 
     /// <summary>
     /// Creates a codec that decodes to a constant value and does nothing when encoding.

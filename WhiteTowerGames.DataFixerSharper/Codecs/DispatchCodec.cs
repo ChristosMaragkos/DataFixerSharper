@@ -22,10 +22,7 @@ internal class DispatchCodec<TBase, TDis> : Codec<TBase>
         _codecGetter = codecGetter;
     }
 
-    public override DataResult<(TBase, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public override DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
     {
         var discrField = ops.GetValue(input, _discriminatorKeyName);
         if (discrField.IsError)
@@ -33,7 +30,7 @@ internal class DispatchCodec<TBase, TDis> : Codec<TBase>
                 $"Input was missing polymorphic type discriminator named {_discriminatorKeyName} - [{discrField.ErrorMessage}]"
             );
 
-        var decodedDiscr = _discriminatorCodec.Parse(ops, discrField.GetOrThrow());
+        var decodedDiscr = _discriminatorCodec.Parse<TOps, TFormat>(ops, discrField.GetOrThrow());
         if (decodedDiscr.IsError)
             return DataResult<(TBase, TFormat)>.Fail(
                 $"Failed to decode type discriminator: [{decodedDiscr.ErrorMessage}]"
@@ -51,14 +48,10 @@ internal class DispatchCodec<TBase, TDis> : Codec<TBase>
         return valueResult;
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        TBase input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
     {
         var discr = _discriminatorGetter(input);
-        var discrResult = _discriminatorCodec.EncodeStart(ops, discr);
+        var discrResult = _discriminatorCodec.EncodeStart<TOps, TFormat>(ops, discr);
 
         if (discrResult.IsError)
             return discrResult;

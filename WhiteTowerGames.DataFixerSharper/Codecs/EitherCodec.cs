@@ -13,10 +13,7 @@ internal class EitherCodec<T> : Codec<T>
         _second = second;
     }
 
-    public override DataResult<(T, TFormat)> Decode<TFormat>(
-        Abstractions.IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public override DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
     {
         var firstTry = _first.Decode(ops, input);
         if (!firstTry.IsError)
@@ -29,11 +26,7 @@ internal class EitherCodec<T> : Codec<T>
         return DataResult<(T, TFormat)>.Fail(secondTry.ErrorMessage);
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        T input,
-        Abstractions.IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
     {
         var firstTry = _first.Encode(input, ops, prefix);
         if (!firstTry.IsError)

@@ -12,7 +12,7 @@ public readonly struct DataResult<T>
 
     public T ResultOrPartial() => GetOrThrow();
 
-    public string ErrorMessage =>
+    public readonly string ErrorMessage =>
         _isError
             ? $"DataResult[{typeof(T)}] Fail: {_errorMessage}"
             : $"DataResult[{typeof(T)}] Success";

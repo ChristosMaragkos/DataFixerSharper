@@ -14,12 +14,12 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
         _valueCodec = valueCodec;
     }
 
-    public override DataResult<(Dictionary<TKey, TValue>, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
+    public override DataResult<(Dictionary<TKey, TValue>, TFormat)> Decode<TOps, TFormat>(
+        TOps ops,
         TFormat input
     )
     {
-        var mapResult = ops.ReadAsMap(input);
+        var mapResult = ops.ReadMap(input);
 
         if (mapResult.IsError)
             return DataResult<(Dictionary<TKey, TValue>, TFormat)>.Fail(
@@ -52,9 +52,9 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
         return DataResult<(Dictionary<TKey, TValue>, TFormat)>.Success((dict, input));
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
+    public override DataResult<TFormat> Encode<TOps, TFormat>(
         Dictionary<TKey, TValue> input,
-        IDynamicOps<TFormat> ops,
+        TOps ops,
         TFormat prefix
     )
     {
@@ -62,13 +62,13 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
 
         foreach (var kvp in input)
         {
-            var encodedKey = _keyCodec.EncodeStart(ops, kvp.Key);
+            var encodedKey = _keyCodec.EncodeStart<TOps, TFormat>(ops, kvp.Key);
             if (encodedKey.IsError)
                 return DataResult<TFormat>.Fail(
                     $"Failed to encode key [{encodedKey.ErrorMessage}]"
                 );
 
-            var encodedValue = _valueCodec.EncodeStart(ops, kvp.Value);
+            var encodedValue = _valueCodec.EncodeStart<TOps, TFormat>(ops, kvp.Value);
             if (encodedValue.IsError)
                 return DataResult<TFormat>.Fail(
                     $"Failed to encode value [{encodedValue.ErrorMessage}]"

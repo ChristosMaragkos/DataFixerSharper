@@ -12,16 +12,10 @@ internal class UpcastCodec<TBase, TDer> : Codec<TBase>
         _underlying = underlying;
     }
 
-    public override DataResult<(TBase, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    ) => _underlying.Decode(ops, input).Map(result => ((TBase)result.Item1, result.Item2));
+    public override DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input) =>
+        _underlying.Decode(ops, input).Map(result => ((TBase)result.Item1, result.Item2));
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        TBase input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
     {
         if (input is not TDer derived)
             return DataResult<TFormat>.Fail(

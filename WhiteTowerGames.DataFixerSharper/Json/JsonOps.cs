@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
+using WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
 using JsonByteBuffer = System.ReadOnlyMemory<byte>;
 
 namespace WhiteTowerGames.DataFixerSharper.Json;
@@ -16,81 +17,60 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     private static JsonByteBuffer BytesFromString(string str) => Encoding.UTF8.GetBytes(str);
 
     private static readonly JsonByteBuffer EmptyValue = BytesFromString("{}");
+    private static readonly JsonByteBuffer EmptyArrayValue = BytesFromString("[]");
+    private static readonly JsonByteBuffer TrueValue = Encoding.UTF8.GetBytes("true");
+    private static readonly JsonByteBuffer FalseValue = Encoding.UTF8.GetBytes("false");
 
     public JsonByteBuffer Empty() => EmptyValue;
 
-    public JsonByteBuffer CreateNumeric(decimal number) =>
-        BytesFromString(number.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
-    public JsonByteBuffer CreateString(string value)
+    public JsonByteBuffer CreateNumeric(decimal number)
     {
-        using var ms = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(ms))
-        {
-            writer.WriteStringValue(value);
-        }
-        return ms.ToArray();
+        return JsonSerializer.SerializeToUtf8Bytes(number);
     }
 
-    public JsonByteBuffer CreateBool(bool value) => BytesFromString(value ? "true" : "false");
+    public JsonByteBuffer CreateString(string value) => JsonSerializer.SerializeToUtf8Bytes(value);
+
+    public JsonByteBuffer CreateBool(bool value) => value ? TrueValue : FalseValue;
 
     public DataResult<decimal> GetNumber(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input.Span, true, default);
-        if (reader.TokenType == JsonTokenType.None && !reader.Read())
-            return DataResult<decimal>.Fail("Invalid numeric input: JSON string was empty");
+        if (!reader.Read())
+            return DataResult<decimal>.Fail("Input was empty");
 
-        if (
-            reader.TokenType == JsonTokenType.Number
-            || reader.Read() && reader.TokenType == JsonTokenType.Number
-        )
+        return reader.TokenType switch
         {
-            if (reader.TryGetDecimal(out var result))
-                return DataResult<decimal>.Success(result);
-
-            return DataResult<decimal>.Fail("Invalid numeric input: not a number.");
-        }
-
-        return DataResult<decimal>.Fail($"Expected a JSON number, instead got {reader.TokenType}");
+            JsonTokenType.Number when reader.TryGetDecimal(out var num) =>
+                DataResult<decimal>.Success(num),
+            _ => DataResult<decimal>.Fail($"Expected number, instead got {reader.TokenType}"),
+        };
     }
 
     public DataResult<string> GetString(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input.Span, true, default);
-        if (reader.TokenType == JsonTokenType.None && !reader.Read())
-            return DataResult<string>.Fail("Invalid string input: no JSON string was found.");
+        if (!reader.Read())
+            return DataResult<string>.Fail("Input was empty");
 
-        if (
-            reader.TokenType == JsonTokenType.String
-            || reader.Read() && reader.TokenType == JsonTokenType.String
-        )
-            return DataResult<string>.Success(reader.GetString()!);
-
-        return DataResult<string>.Fail(
-            $"Expected a JSON string literal, instead got {reader.TokenType}"
-        );
+        return reader.TokenType == JsonTokenType.String
+            ? DataResult<string>.Success(reader.GetString()!)
+            : DataResult<string>.Fail(
+                $"Expected JSON string literal, instead got {reader.TokenType}"
+            );
     }
 
     public DataResult<bool> GetBool(JsonByteBuffer input)
     {
-        var reader = new Utf8JsonReader(input.Span, true, default);
-        if (reader.TokenType == JsonTokenType.None && !reader.Read())
-            return DataResult<bool>.Fail("Invalid boolean input: no JSON string was found.");
+        var reader = new Utf8JsonReader(input.Span);
+        if (!reader.Read())
+            return DataResult<bool>.Fail("Input was empty");
 
-        if (reader.TokenType == JsonTokenType.True)
-            return DataResult<bool>.Success(true);
-        if (reader.TokenType == JsonTokenType.False)
-            return DataResult<bool>.Success(false);
-
-        if (reader.Read())
+        return reader.TokenType switch
         {
-            if (reader.TokenType == JsonTokenType.True)
-                return DataResult<bool>.Success(true);
-            if (reader.TokenType == JsonTokenType.False)
-                return DataResult<bool>.Success(false);
-        }
-
-        return DataResult<bool>.Fail($"Expected a boolean value, instead got {reader.TokenType}");
+            JsonTokenType.True => DataResult<bool>.Success(true),
+            JsonTokenType.False => DataResult<bool>.Success(false),
+            _ => DataResult<bool>.Fail($"Expected boolean, instead got {reader.TokenType}"),
+        };
     }
 
     public DataResult<JsonByteBuffer> GetValue(JsonByteBuffer input, string name)
@@ -136,13 +116,13 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return buffer.WrittenMemory;
     }
 
-    public DataResult<IEnumerable<JsonByteBuffer>> ReadAsStream(JsonByteBuffer input)
+    public DataResult<IEnumerable<JsonByteBuffer>> ReadList(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input.Span, true, default);
 
         if (!reader.Read() || reader.TokenType != JsonTokenType.StartArray)
             return DataResult<IEnumerable<JsonByteBuffer>>.Fail(
-                "Could not construct list: Input was not a JSON array"
+                $"Could not construct list: Expected JSON array, got {reader.TokenType} instead"
             );
 
         var elements = new List<JsonByteBuffer>();
@@ -178,7 +158,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return buffer.WrittenMemory;
     }
 
-    public DataResult<IEnumerable<KeyValuePair<JsonByteBuffer, JsonByteBuffer>>> ReadAsMap(
+    public DataResult<IEnumerable<KeyValuePair<JsonByteBuffer, JsonByteBuffer>>> ReadMap(
         JsonByteBuffer input
     )
     {
@@ -291,60 +271,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
     public JsonByteBuffer RemoveFromInput(JsonByteBuffer input, JsonByteBuffer value)
     {
-        var buffer = new ArrayBufferWriter<byte>();
-        using var writer = new Utf8JsonWriter(buffer);
-
-        // Collect keys to remove
-        var keysToRemove = new List<byte[]>();
-        var valReader = new Utf8JsonReader(value.Span, true, default);
-        if (valReader.Read() && valReader.TokenType == JsonTokenType.StartObject)
-        {
-            while (valReader.Read() && valReader.TokenType != JsonTokenType.EndObject)
-            {
-                if (valReader.TokenType == JsonTokenType.PropertyName)
-                    keysToRemove.Add(valReader.ValueSpan.ToArray());
-
-                valReader.Skip();
-            }
-        }
-
-        // Iterate input and write only keys not in remove list
-        var inputReader = new Utf8JsonReader(input.Span, true, default);
-        if (!inputReader.Read() || inputReader.TokenType != JsonTokenType.StartObject)
-            return input; // not an object, nothing to remove
-
-        writer.WriteStartObject();
-
-        while (inputReader.Read() && inputReader.TokenType != JsonTokenType.EndObject)
-        {
-            if (inputReader.TokenType != JsonTokenType.PropertyName)
-                continue;
-
-            var keySpan = inputReader.ValueSpan;
-
-            inputReader.Read(); // move to value
-            var valStart = (int)inputReader.TokenStartIndex;
-            inputReader.Skip();
-            var valLength = (int)inputReader.BytesConsumed - valStart;
-
-            if (!IsKeyMatch(keysToRemove, keySpan))
-            {
-                writer.WritePropertyName(keySpan);
-                writer.WriteRawValue(input.Slice(valStart, valLength).Span, true);
-            }
-        }
-
-        writer.WriteEndObject();
-        writer.Flush();
-        return buffer.WrittenMemory;
-
-        static bool IsKeyMatch(List<byte[]> keys, ReadOnlySpan<byte> currentKey)
-        {
-            foreach (var key in keys)
-                if (currentKey.SequenceEqual(key))
-                    return true;
-            return false;
-        }
+        return input; // mutating the input while decoding is useless since our lookups are by-key
     }
 
     private static string DecodeJsonString(JsonByteBuffer buffer)
@@ -374,6 +301,181 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         r.Read(); // StartObject
         return r.Read() && r.TokenType == JsonTokenType.EndObject;
     }
+
+    private static bool IsArray(JsonByteBuffer buffer)
+    {
+        if (buffer.IsEmpty)
+            return false;
+
+        var r = new Utf8JsonReader(buffer.Span, true, default);
+        return r.Read() && r.TokenType == JsonTokenType.StartArray;
+    }
+
+    private static bool IsEmptyArray(JsonByteBuffer buffer)
+    {
+        if (!IsArray(buffer))
+            return false;
+
+        var r = new Utf8JsonReader(buffer.Span, true, default);
+        r.Read(); // StartArray
+        return r.Read() && r.TokenType == JsonTokenType.EndArray;
+    }
+
+    private class JsonRecordBuilder : IRecordBuilder<JsonByteBuffer>
+    {
+        private readonly List<KeyValuePair<JsonByteBuffer, JsonByteBuffer>> _fields = new();
+        private DataResult<JsonByteBuffer> _errorState = DataResult<JsonByteBuffer>.Success(
+            JsonOps.Instance.Empty()
+        );
+
+        public IRecordBuilder<JsonByteBuffer> Add(JsonByteBuffer key, JsonByteBuffer value)
+        {
+            _fields.Add(new KeyValuePair<JsonByteBuffer, JsonByteBuffer>(key, value));
+            return this;
+        }
+
+        public IRecordBuilder<JsonByteBuffer> Add(
+            JsonByteBuffer key,
+            DataResult<JsonByteBuffer> valueResult
+        )
+        {
+            if (valueResult.IsError)
+                _errorState = DataResult<JsonByteBuffer>.Fail(valueResult.ErrorMessage);
+            else
+                _fields.Add(
+                    new KeyValuePair<JsonByteBuffer, JsonByteBuffer>(key, valueResult.GetOrThrow())
+                );
+
+            return this;
+        }
+
+        public DataResult<JsonByteBuffer> Build(JsonByteBuffer prefix)
+        {
+            if (_errorState.IsError)
+                return _errorState;
+            if (_fields.Count == 0)
+                return DataResult<JsonByteBuffer>.Success(prefix);
+
+            // EXACTLY ONE buffer and writer allocation for the entire record
+            var buffer = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(buffer);
+
+            writer.WriteStartObject();
+
+            if (!IsEmptyObject(prefix))
+                WriteJsonObject(prefix, writer);
+
+            foreach (var kvp in _fields)
+            {
+                var keyString = DecodeJsonString(kvp.Key);
+                writer.WritePropertyName(keyString);
+                writer.WriteRawValue(kvp.Value.Span, true);
+            }
+
+            writer.WriteEndObject();
+            writer.Flush();
+
+            return DataResult<JsonByteBuffer>.Success(buffer.WrittenMemory);
+        }
+    }
+
+    private class JsonArrayBuilder : IListBuilder<JsonByteBuffer>
+    {
+        private readonly List<JsonByteBuffer> _elements = new();
+        private DataResult<JsonByteBuffer> _errorState = DataResult<JsonByteBuffer>.Success(
+            JsonOps.Instance.Empty()
+        );
+
+        public IListBuilder<JsonByteBuffer> Add(JsonByteBuffer value)
+        {
+            _elements.Add(value);
+            return this;
+        }
+
+        public IListBuilder<JsonByteBuffer> Add(DataResult<JsonByteBuffer> value)
+        {
+            if (value.IsError)
+                _errorState = value;
+            else
+                _elements.Add(value.GetOrThrow());
+            return this;
+        }
+
+        public DataResult<JsonByteBuffer> Build(JsonByteBuffer prefix)
+        {
+            if (_errorState.IsError)
+                return _errorState;
+            if (_elements.Count == 0)
+            {
+                if (prefix.IsEmpty || IsEmptyObject(prefix))
+                    return DataResult<JsonByteBuffer>.Success(EmptyArrayValue);
+
+                return DataResult<JsonByteBuffer>.Success(prefix);
+            }
+
+            var buffer = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(buffer);
+
+            if (!IsEmptyObject(prefix))
+                WriteJsonObject(prefix, writer);
+            else if (!IsEmptyArray(prefix))
+                WriteJsonArray(prefix, writer);
+
+            writer.WriteStartArray();
+            foreach (var item in _elements)
+                writer.WriteRawValue(item.Span);
+
+            writer.WriteEndArray();
+            writer.Flush();
+            return DataResult<JsonByteBuffer>.Success(buffer.WrittenMemory);
+        }
+    }
+
+    private static void WriteJsonObject(JsonByteBuffer obj, Utf8JsonWriter writer)
+    {
+        var reader = new Utf8JsonReader(obj.Span, true, default);
+        if (reader.Read() && reader.TokenType == JsonTokenType.StartObject)
+        {
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+            {
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    reader.Skip();
+                    continue;
+                }
+
+                var keyString = reader.GetString()!;
+
+                reader.Read(); // Move to the value
+                var valStart = (int)reader.TokenStartIndex;
+                reader.Skip(); // Fast-forward over the entire value token (even if it's a nested object)
+                var valLength = (int)reader.BytesConsumed - valStart;
+
+                writer.WritePropertyName(keyString);
+                writer.WriteRawValue(obj.Slice(valStart, valLength).Span, true);
+            }
+        }
+    }
+
+    private static void WriteJsonArray(JsonByteBuffer array, Utf8JsonWriter writer)
+    {
+        var reader = new Utf8JsonReader(array.Span, true, default);
+        if (reader.Read() && reader.TokenType == JsonTokenType.StartArray)
+        {
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+            {
+                var valStart = (int)reader.TokenStartIndex;
+                reader.Skip();
+                var valLength = (int)reader.BytesConsumed - valStart;
+
+                writer.WriteRawValue(array.Slice(valStart, valLength).Span, true);
+            }
+        }
+    }
+
+    public IRecordBuilder<JsonByteBuffer> MapBuilder() => new JsonRecordBuilder();
+
+    public IListBuilder<JsonByteBuffer> ListBuilder() => new JsonArrayBuilder();
 }
 
 public static class JsonByteBufferExtensions

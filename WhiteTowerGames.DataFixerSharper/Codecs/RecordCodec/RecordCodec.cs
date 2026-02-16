@@ -20,19 +20,12 @@ public static class RecordCodecBuilder
             _ctor = ctor;
         }
 
-        public override DataResult<(T, TFormat)> Decode<TFormat>(
-            IDynamicOps<TFormat> ops,
-            TFormat input
-        )
+        public override DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         {
             return _ctor.Decode(ops, input);
         }
 
-        public override DataResult<TFormat> Encode<TFormat>(
-            T input,
-            IDynamicOps<TFormat> ops,
-            TFormat prefix
-        )
+        public override DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
         {
             return _ctor.Encode(input, ops, prefix);
         }

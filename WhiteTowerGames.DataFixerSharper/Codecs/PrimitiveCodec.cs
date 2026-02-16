@@ -18,10 +18,7 @@ internal class PrimitiveCodec<T> : Codec<T>
         _decoder = decoder;
     }
 
-    public override DataResult<(T, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public override DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
     {
         var decoded = _decoder(ops, input!);
         if (decoded.IsError)
@@ -32,11 +29,7 @@ internal class PrimitiveCodec<T> : Codec<T>
         return decoded.Map<(T, TFormat)>(result => (result.Item1, (TFormat)result.Item2));
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        T input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
     {
         var encoded = _encoder(input, ops);
         if (encoded.IsError)

@@ -22,19 +22,12 @@ internal class SafeMapCodec<TFrom, TTo> : Codec<TTo>
         _from = from;
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        TTo input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
     {
         return _underlying.Encode(_from(input), ops, prefix);
     }
 
-    public override DataResult<(TTo, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public override DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
     {
         return _underlying.Decode(ops, input).Map(pair => (_to(pair.Item1), pair.Item2));
     }
@@ -58,11 +51,7 @@ internal class UnsafeMapCodec<TFrom, TTo> : Codec<TTo>
         _from = from;
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        TTo input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
     {
         var transformed = _from(input);
         if (transformed.IsError)
@@ -73,10 +62,7 @@ internal class UnsafeMapCodec<TFrom, TTo> : Codec<TTo>
         return _underlying.Encode(value, ops, prefix);
     }
 
-    public override DataResult<(TTo, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public override DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
     {
         return _underlying
             .Decode(ops, input)
@@ -102,11 +88,7 @@ internal class Safe2UnsafeMapCodec<TFrom, TTo> : Codec<TTo>
         _from = from;
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        TTo input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
     {
         var transformed = _from(input);
         if (transformed.IsError)
@@ -117,10 +99,7 @@ internal class Safe2UnsafeMapCodec<TFrom, TTo> : Codec<TTo>
         return _underlying.Encode(value, ops, prefix);
     }
 
-    public override DataResult<(TTo, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public override DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
     {
         return _underlying.Decode(ops, input).Map(pair => (_to(pair.Item1), pair.Item2));
     }
@@ -144,19 +123,12 @@ internal class Unsafe2SafeMapCodec<TFrom, TTo> : Codec<TTo>
         _from = from;
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        TTo input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public override DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
     {
         return _underlying.Encode(_from(input), ops, prefix);
     }
 
-    public override DataResult<(TTo, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public override DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
     {
         return _underlying
             .Decode(ops, input)
