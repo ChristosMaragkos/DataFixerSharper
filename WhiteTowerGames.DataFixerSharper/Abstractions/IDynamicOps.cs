@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
 
 namespace WhiteTowerGames.DataFixerSharper.Abstractions;
 
@@ -64,6 +65,7 @@ public interface IDynamicOps<T> : IDynamicOps
     #region Utils
     T AppendToPrefix(T prefix, T value);
     T RemoveFromInput(T input, T value);
+    IRecordBuilder<T> MapBuilder();
     #endregion
 
     #region Default Implementations

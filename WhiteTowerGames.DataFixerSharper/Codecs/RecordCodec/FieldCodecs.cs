@@ -20,7 +20,11 @@ public static class CodecFieldExtensions
 
 public interface IFieldCodec<T, TField>
 {
-    DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix);
+    IRecordBuilder<TFormat> Encode<TFormat>(
+        T input,
+        IDynamicOps<TFormat> ops,
+        IRecordBuilder<TFormat> builder
+    );
     DataResult<(TField, TFormat)> Decode<TFormat>(IDynamicOps<TFormat> ops, TFormat input);
 }
 
@@ -55,7 +59,11 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
         return parsed.Map(decoded => (decoded, ops.RemoveFromInput(input, key)));
     }
 
-    public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix)
+    public IRecordBuilder<TFormat> Encode<TFormat>(
+        T input,
+        IDynamicOps<TFormat> ops,
+        IRecordBuilder<TFormat> builder
+    )
     {
         var key = _cachedFieldNames.TryGetValue(typeof(TFormat), out var formatted)
             ? (TFormat)formatted
@@ -112,7 +120,11 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         return parsed.Map(decoded => (decoded, ops.RemoveFromInput(input, key)));
     }
 
-    public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix)
+    public IRecordBuilder<TFormat> Encode<TFormat>(
+        T input,
+        IDynamicOps<TFormat> ops,
+        IRecordBuilder<TFormat> builder
+    )
     {
         var key = _cachedFieldNames.TryGetValue(typeof(TFormat), out var formatted)
             ? (TFormat)formatted

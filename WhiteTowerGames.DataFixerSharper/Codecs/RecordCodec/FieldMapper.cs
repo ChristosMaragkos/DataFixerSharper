@@ -22,8 +22,11 @@ public class Fm1<T, TF> : IFieldMapper<T>
     public DataResult<(T, TFormat)> Decode<TFormat>(IDynamicOps<TFormat> ops, TFormat input) =>
         _f1.Decode(ops, input).Map(result => (_ctor!(result.Item1), result.Item2));
 
-    public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix) =>
-        _f1.Encode(input, ops, prefix);
+    public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix)
+    {
+        var builder = ops.MapBuilder();
+        return _f1.Encode(input, ops, builder).Build(prefix);
+    }
 
     public IFieldMapper<T> WithCtor(Func<TF, T> ctor)
     {
@@ -62,15 +65,8 @@ public class Fm2<T, TF, TF1> : IFieldMapper<T>
 
     public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix)
     {
-        var r1 = _f1.Encode(input, ops, prefix);
-        if (r1.IsError)
-            return DataResult<TFormat>.Fail(r1.ErrorMessage);
-
-        var r2 = _f2.Encode(input, ops, r1.GetOrThrow());
-        if (r2.IsError)
-            return DataResult<TFormat>.Fail(r2.ErrorMessage);
-
-        return r2;
+        var builder = ops.MapBuilder();
+        return _f2.Encode(input, ops, _f1.Encode(input, ops, builder)).Build(prefix);
     }
 
     public IFieldMapper<T> WithCtor(Func<TF, TF1, T> ctor)
@@ -116,19 +112,9 @@ public class Fm3<T, TF, TF1, TF2> : IFieldMapper<T>
 
     public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix)
     {
-        var r1 = _f1.Encode(input, ops, prefix);
-        if (r1.IsError)
-            return DataResult<TFormat>.Fail(r1.ErrorMessage);
-
-        var r2 = _f2.Encode(input, ops, r1.GetOrThrow());
-        if (r2.IsError)
-            return DataResult<TFormat>.Fail(r2.ErrorMessage);
-
-        var r3 = _f3.Encode(input, ops, r2.GetOrThrow());
-        if (r3.IsError)
-            return DataResult<TFormat>.Fail(r3.ErrorMessage);
-
-        return r3;
+        var builder = ops.MapBuilder();
+        return _f3.Encode(input, ops, _f2.Encode(input, ops, _f1.Encode(input, ops, builder)))
+            .Build(prefix);
     }
 
     public IFieldMapper<T> WithCtor(Func<TF, TF1, TF2, T> ctor)
@@ -193,23 +179,13 @@ public class Fm4<T, TF, TF1, TF2, TF3> : IFieldMapper<T>
 
     public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix)
     {
-        var r1 = _f1.Encode(input, ops, prefix);
-        if (r1.IsError)
-            return DataResult<TFormat>.Fail(r1.ErrorMessage);
-
-        var r2 = _f2.Encode(input, ops, r1.GetOrThrow());
-        if (r2.IsError)
-            return DataResult<TFormat>.Fail(r2.ErrorMessage);
-
-        var r3 = _f3.Encode(input, ops, r2.GetOrThrow());
-        if (r3.IsError)
-            return DataResult<TFormat>.Fail(r3.ErrorMessage);
-
-        var r4 = _f4.Encode(input, ops, r3.GetOrThrow());
-        if (r4.IsError)
-            return DataResult<TFormat>.Fail(r4.ErrorMessage);
-
-        return r4;
+        var builder = ops.MapBuilder();
+        return _f4.Encode(
+                input,
+                ops,
+                _f3.Encode(input, ops, _f2.Encode(input, ops, _f1.Encode(input, ops, builder)))
+            )
+            .Build(prefix);
     }
 
     public IFieldMapper<T> WithCtor(Func<TF, TF1, TF2, TF3, T> ctor)
@@ -282,27 +258,17 @@ public class Fm5<T, TF, TF1, TF2, TF3, TF4> : IFieldMapper<T>
 
     public DataResult<TFormat> Encode<TFormat>(T input, IDynamicOps<TFormat> ops, TFormat prefix)
     {
-        var r1 = _f1.Encode(input, ops, prefix);
-        if (r1.IsError)
-            return DataResult<TFormat>.Fail(r1.ErrorMessage);
-
-        var r2 = _f2.Encode(input, ops, r1.GetOrThrow());
-        if (r2.IsError)
-            return DataResult<TFormat>.Fail(r2.ErrorMessage);
-
-        var r3 = _f3.Encode(input, ops, r2.GetOrThrow());
-        if (r3.IsError)
-            return DataResult<TFormat>.Fail(r3.ErrorMessage);
-
-        var r4 = _f4.Encode(input, ops, r3.GetOrThrow());
-        if (r4.IsError)
-            return DataResult<TFormat>.Fail(r4.ErrorMessage);
-
-        var r5 = _f5.Encode(input, ops, r4.GetOrThrow());
-        if (r5.IsError)
-            return DataResult<TFormat>.Fail(r5.ErrorMessage);
-
-        return r5;
+        var builder = ops.MapBuilder();
+        return _f5.Encode(
+                input,
+                ops,
+                _f4.Encode(
+                    input,
+                    ops,
+                    _f3.Encode(input, ops, _f2.Encode(input, ops, _f1.Encode(input, ops, builder)))
+                )
+            )
+            .Build(prefix);
     }
 
     public IFieldMapper<T> WithCtor(Func<TF, TF1, TF2, TF3, TF4, T> ctor)
