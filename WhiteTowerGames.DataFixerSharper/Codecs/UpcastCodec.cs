@@ -2,26 +2,29 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
 
-internal class UpcastCodec<TBase, TDer> : Codec<TBase>
+internal readonly struct UpcastCodec<TBase, TDer> : ICodec<TBase>
     where TDer : TBase
 {
-    private readonly Codec<TDer> _underlying;
+    private readonly ICodec<TDer> _underlying;
 
-    public UpcastCodec(Codec<TDer> underlying)
+    public UpcastCodec(ICodec<TDer> underlying)
     {
         _underlying = underlying;
     }
 
-    public override DataResult<(TBase, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    ) => _underlying.Decode(ops, input).Map(result => ((TBase)result.Item1, result.Item2));
+    public DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var decodedResult = _underlying.Decode(ops, input);
+        if (decodedResult.IsError)
+            return DataResult<(TBase, TFormat)>.Fail(decodedResult.ErrorMessage);
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        TBase input,
-        IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+        var decoded = decodedResult.GetOrThrow();
+        return DataResult<(TBase, TFormat)>.Success(((TBase)decoded.Item1, decoded.Item2));
+    }
+
+    public DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
     {
         if (input is not TDer derived)
             return DataResult<TFormat>.Fail(

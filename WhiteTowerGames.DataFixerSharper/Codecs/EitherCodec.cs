@@ -2,47 +2,34 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
 
-internal class EitherCodec<T> : Codec<T>
+internal readonly struct EitherCodec<T> : ICodec<T>
 {
-    public readonly Codec<T> _first;
-    public readonly Codec<T> _second;
+    public readonly ICodec<T> _first;
+    public readonly ICodec<T> _second;
 
-    public EitherCodec(Codec<T> first, Codec<T> second)
+    public EitherCodec(ICodec<T> first, ICodec<T> second)
     {
         _first = first;
         _second = second;
     }
 
-    public override DataResult<(T, TFormat)> Decode<TFormat>(
-        Abstractions.IDynamicOps<TFormat> ops,
-        TFormat input
-    )
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
     {
         var firstTry = _first.Decode(ops, input);
-        if (firstTry.IsSuccess)
+        if (!firstTry.IsError)
             return firstTry;
 
-        var secondTry = _second.Decode(ops, input);
-        if (secondTry.IsSuccess)
-            return secondTry;
-
-        return DataResult<(T, TFormat)>.Fail(secondTry.ErrorMessage);
+        return _second.Decode(ops, input);
     }
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        T input,
-        Abstractions.IDynamicOps<TFormat> ops,
-        TFormat prefix
-    )
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
     {
         var firstTry = _first.Encode(input, ops, prefix);
-        if (firstTry.IsSuccess)
+        if (!firstTry.IsError)
             return firstTry;
 
-        var secondTry = _second.Encode(input, ops, prefix);
-        if (secondTry.IsSuccess)
-            return secondTry;
-
-        return DataResult<TFormat>.Fail(secondTry.ErrorMessage);
+        return _second.Encode(input, ops, prefix);
     }
 }

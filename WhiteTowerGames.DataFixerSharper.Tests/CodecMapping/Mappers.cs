@@ -1,6 +1,7 @@
 using System.Numerics;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 using WhiteTowerGames.DataFixerSharper.Codecs;
+using WhiteTowerGames.DataFixerSharper.Json;
 
 namespace WhiteTowerGames.DataFixerSharper.Tests.CodecMapping;
 
@@ -12,7 +13,7 @@ public class Mappers
     public void Vector3_ToFloatArray_Succeeds()
     {
         // Given
-        Codec<Vector3> codec = BuiltinCodecs
+        ICodec<Vector3> codec = BuiltinCodecs
             .Float.ForArray()
             .Unsafe2SafeMap<Vector3>(
                 vec => new float[] { vec.X, vec.Y, vec.Z },
@@ -26,9 +27,9 @@ public class Mappers
         var vec = new Vector3(1f, 2f, 3f);
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, vec).GetOrThrow();
+        var encoded = codec.Encode(vec, JsonOps, JsonOps.Empty()).GetOrThrow();
         var encodedArray = encoded
-            .AsArray()
+            .ToJsonArray()
             .Select(node => float.Parse(node!.ToJsonString()))
             .ToArray();
 
@@ -41,7 +42,7 @@ public class Mappers
     public void ValidFloatArray_ToVector3_Succeeds()
     {
         // Given
-        Codec<Vector3> vectorCodec = BuiltinCodecs
+        ICodec<Vector3> vectorCodec = BuiltinCodecs
             .Float.ForArray()
             .Unsafe2SafeMap<Vector3>(
                 vec => new float[] { vec.X, vec.Y, vec.Z },
@@ -52,11 +53,11 @@ public class Mappers
                         )
                         : DataResult<Vector3>.Success(new Vector3(arr[0], arr[1], arr[2]))
             );
-        Codec<float[]> floatArrayCodec = BuiltinCodecs.Float.ForArray();
+        ICodec<float[]> floatArrayCodec = BuiltinCodecs.Float.ForArray();
         float[] array = { 1f, 2f, 3f };
 
         // When
-        var encoded = floatArrayCodec.EncodeStart(JsonOps, array).GetOrThrow();
+        var encoded = floatArrayCodec.Encode(array, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = vectorCodec.Parse(JsonOps, encoded);
 
         // Then
@@ -68,7 +69,7 @@ public class Mappers
     public void InvalidFloatArray_ToVector3_Fails()
     {
         // Given
-        Codec<Vector3> vectorCodec = BuiltinCodecs
+        ICodec<Vector3> vectorCodec = BuiltinCodecs
             .Float.ForArray()
             .Unsafe2SafeMap<Vector3>(
                 vec => new float[] { vec.X, vec.Y, vec.Z },
@@ -79,11 +80,11 @@ public class Mappers
                         )
                         : DataResult<Vector3>.Success(new Vector3(arr[0], arr[1], arr[2]))
             );
-        Codec<float[]> floatArrayCodec = BuiltinCodecs.Float.ForArray();
+        ICodec<float[]> floatArrayCodec = BuiltinCodecs.Float.ForArray();
         float[] array = { 1f, 2f, 3f, 4f };
 
         // When
-        var encoded = floatArrayCodec.EncodeStart(JsonOps, array).GetOrThrow();
+        var encoded = floatArrayCodec.Encode(array, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = vectorCodec.Parse(JsonOps, encoded);
 
         // Then

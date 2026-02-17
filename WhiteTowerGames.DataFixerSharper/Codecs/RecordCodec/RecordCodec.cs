@@ -2,39 +2,200 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
 
-public static class RecordCodecBuilder
+public readonly struct RecordCodec1<T, TF> : ICodec<T>
 {
-    public static Codec<T> Create<T>(Func<Instance<T>, IFieldMapper<T>> builder)
+    private readonly IFieldCodec<T, TF> _f0;
+    private readonly Func<TF, T> _factory;
+
+    public RecordCodec1(IFieldCodec<T, TF> f0, Func<TF, T> factory)
     {
-        var instance = new Instance<T>();
-        var ctor = builder(instance);
-        return new RecordCodec<T>(ctor);
+        _f0 = f0;
+        _factory = factory;
     }
 
-    private class RecordCodec<T> : Codec<T>
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
     {
-        private readonly IFieldMapper<T> _ctor;
+        var dec0 = _f0.Decode(ops, input);
+        if (dec0.IsError)
+            return DataResult<(T, TFormat)>.Fail(dec0.ErrorMessage);
 
-        public RecordCodec(IFieldMapper<T> ctor)
-        {
-            _ctor = ctor;
-        }
+        var field0 = dec0.GetOrThrow().Item1;
+        var instance = _factory(field0);
+        var remainder = dec0.GetOrThrow().Item2;
 
-        public override DataResult<(T, TFormat)> Decode<TFormat>(
-            IDynamicOps<TFormat> ops,
-            TFormat input
-        )
-        {
-            return _ctor.Decode(ops, input);
-        }
+        return DataResult<(T, TFormat)>.Success((instance, remainder));
+    }
 
-        public override DataResult<TFormat> Encode<TFormat>(
-            T input,
-            IDynamicOps<TFormat> ops,
-            TFormat prefix
-        )
-        {
-            return _ctor.Encode(input, ops, prefix);
-        }
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var map = ops.CreateEmptyMap();
+        var enc0 = _f0.Encode(input, ops, map);
+        if (enc0.IsError)
+            return enc0;
+
+        var finalPrefix = ops.AppendToPrefix(prefix, enc0.GetOrThrow());
+        return DataResult<TFormat>.Success(finalPrefix);
+    }
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
+        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
+
+    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var parsed = Decode(ops, input);
+        if (parsed.IsError)
+            return DataResult<T>.Fail(parsed.ErrorMessage);
+
+        return DataResult<T>.Success(parsed.GetOrThrow().Item1);
+    }
+}
+
+public readonly struct RecordCodec2<T, TF, TF1> : ICodec<T>
+{
+    private readonly IFieldCodec<T, TF> _f0;
+    private readonly IFieldCodec<T, TF1> _f1;
+    private readonly Func<TF, TF1, T> _factory;
+
+    public RecordCodec2(IFieldCodec<T, TF> f0, IFieldCodec<T, TF1> f1, Func<TF, TF1, T> factory)
+    {
+        _f0 = f0;
+        _f1 = f1;
+        _factory = factory;
+    }
+
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var dec0 = _f0.Decode(ops, input);
+        if (dec0.IsError)
+            return DataResult<(T, TFormat)>.Fail(dec0.ErrorMessage);
+
+        var field0 = dec0.GetOrThrow().Item1;
+
+        var dec1 = _f1.Decode(ops, dec0.GetOrThrow().Item2);
+        if (dec1.IsError)
+            return DataResult<(T, TFormat)>.Fail(dec1.ErrorMessage);
+
+        var field1 = dec1.GetOrThrow().Item1;
+
+        var instance = _factory(field0, field1);
+        var remainder = dec1.GetOrThrow().Item2;
+
+        return DataResult<(T, TFormat)>.Success((instance, remainder));
+    }
+
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var map = ops.CreateEmptyMap();
+        var enc0 = _f0.Encode(input, ops, map);
+        if (enc0.IsError)
+            return enc0;
+
+        // use (prefix + encoded fields) to accumulate
+        var enc1 = _f1.Encode(input, ops, enc0.GetOrThrow());
+        if (enc1.IsError)
+            return enc1;
+
+        var finalPrefix = ops.AppendToPrefix(prefix, enc1.GetOrThrow());
+        return DataResult<TFormat>.Success(finalPrefix);
+    }
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
+        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
+
+    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var parsed = Decode(ops, input);
+        if (parsed.IsError)
+            return DataResult<T>.Fail(parsed.ErrorMessage);
+
+        return DataResult<T>.Success(parsed.GetOrThrow().Item1);
+    }
+}
+
+public readonly struct RecordCodec3<T, TF, TF1, TF2> : ICodec<T>
+{
+    private readonly IFieldCodec<T, TF> _f0;
+    private readonly IFieldCodec<T, TF1> _f1;
+    private readonly IFieldCodec<T, TF2> _f2;
+    private readonly Func<TF, TF1, TF2, T> _factory;
+
+    public RecordCodec3(
+        IFieldCodec<T, TF> f0,
+        IFieldCodec<T, TF1> f1,
+        IFieldCodec<T, TF2> f2,
+        Func<TF, TF1, TF2, T> factory
+    )
+    {
+        _f0 = f0;
+        _f1 = f1;
+        _f2 = f2;
+        _factory = factory;
+    }
+
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var dec0 = _f0.Decode(ops, input);
+        if (dec0.IsError)
+            return DataResult<(T, TFormat)>.Fail(dec0.ErrorMessage);
+
+        var field0 = dec0.GetOrThrow().Item1;
+
+        var dec1 = _f1.Decode(ops, dec0.GetOrThrow().Item2);
+        if (dec1.IsError)
+            return DataResult<(T, TFormat)>.Fail(dec1.ErrorMessage);
+
+        var field1 = dec1.GetOrThrow().Item1;
+
+        var dec2 = _f2.Decode(ops, dec1.GetOrThrow().Item2);
+        if (dec2.IsError)
+            return DataResult<(T, TFormat)>.Fail(dec2.ErrorMessage);
+
+        var field2 = dec2.GetOrThrow().Item1;
+
+        var instance = _factory(field0, field1, field2);
+        var remainder = dec2.GetOrThrow().Item2;
+
+        return DataResult<(T, TFormat)>.Success((instance, remainder));
+    }
+
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var map = ops.CreateEmptyMap();
+        var enc0 = _f0.Encode(input, ops, map);
+        if (enc0.IsError)
+            return enc0;
+
+        // use (prefix + encoded fields) to accumulate
+        var enc1 = _f1.Encode(input, ops, enc0.GetOrThrow());
+        if (enc1.IsError)
+            return enc1;
+
+        var enc2 = _f2.Encode(input, ops, enc1.GetOrThrow());
+        if (enc2.IsError)
+            return enc2;
+
+        var finalPrefix = ops.AppendToPrefix(prefix, enc2.GetOrThrow());
+        return DataResult<TFormat>.Success(finalPrefix);
+    }
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
+        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
+
+    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var parsed = Decode(ops, input);
+        if (parsed.IsError)
+            return DataResult<T>.Fail(parsed.ErrorMessage);
+
+        return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 }

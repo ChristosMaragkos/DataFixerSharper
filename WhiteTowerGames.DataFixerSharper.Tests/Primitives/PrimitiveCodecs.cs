@@ -1,3 +1,7 @@
+using System.Text;
+using WhiteTowerGames.DataFixerSharper.Codecs;
+using WhiteTowerGames.DataFixerSharper.Json;
+
 namespace WhiteTowerGames.DataFixerSharper.Tests.Primitives;
 
 public class PrimitiveCodecs
@@ -11,7 +15,7 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Int32;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, 42).GetOrThrow();
+        var encoded = codec.Encode(42, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -25,7 +29,7 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Int64;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, 42).GetOrThrow();
+        var encoded = codec.Encode(42L, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -39,7 +43,7 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Float;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, 42f).GetOrThrow();
+        var encoded = codec.Encode(42f, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -53,7 +57,7 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Double;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, 42d).GetOrThrow();
+        var encoded = codec.Encode(42d, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -67,7 +71,7 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Bool;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, true).GetOrThrow();
+        var encoded = codec.Encode(true, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -81,7 +85,7 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.String;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, "banana").GetOrThrow();
+        var encoded = codec.Encode("banana", JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -92,13 +96,13 @@ public class PrimitiveCodecs
     public void ConstantCodec_Works()
     {
         // Given
-        var codec = BuiltinCodecs.Int32.Constant(42);
+        var codec = ICodec.Constant(42);
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, 120).GetOrThrow();
+        var encoded = codec.Encode(120, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
-        Assert.Equal("{}", encoded.ToString());
+        Assert.Equal(Encoding.UTF8.GetBytes("{}"), encoded.Memory);
         Assert.Equal(42, decoded);
     }
 }

@@ -2,7 +2,7 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
 
-internal class ConstantCodec<T> : Codec<T>
+internal readonly struct ConstantCodec<T> : ICodec<T>
 {
     private readonly T _value;
 
@@ -11,14 +11,9 @@ internal class ConstantCodec<T> : Codec<T>
         _value = value;
     }
 
-    public override DataResult<(T, TFormat)> Decode<TFormat>(
-        IDynamicOps<TFormat> ops,
-        TFormat input
-    ) => DataResult<(T, TFormat)>.Success((_value, input));
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat> => DataResult<(T, TFormat)>.Success((_value, input));
 
-    public override DataResult<TFormat> Encode<TFormat>(
-        T input,
-        Abstractions.IDynamicOps<TFormat> ops,
-        TFormat prefix
-    ) => DataResult<TFormat>.Success(ops.Empty());
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat> => DataResult<TFormat>.Success(ops.Empty());
 }
