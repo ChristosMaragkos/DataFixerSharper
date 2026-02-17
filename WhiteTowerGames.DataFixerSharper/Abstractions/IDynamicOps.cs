@@ -35,7 +35,7 @@ public interface IDynamicOps<TFormat>
 
     #region Utils
     TFormat AppendToPrefix(TFormat prefix, TFormat value);
-    TFormat RemoveFromInput(TFormat input, TFormat value);
+    TFormat RemoveFromInput(TFormat input, string valueKey);
     #endregion
 }
 
@@ -60,20 +60,56 @@ public static class DynamicOpsExtensions
         where TOps : IDynamicOps<TFormat> => ops.CreateNumeric((decimal)value);
 
     public static DataResult<sbyte> GetInt8<TOps, TFormat>(this TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => ops.GetNumber(input).Map(d => (sbyte)d);
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<sbyte>.Fail(num.ErrorMessage)
+            : DataResult<sbyte>.Success((sbyte)num.GetOrThrow());
+    }
 
     public static DataResult<short> GetInt16<TOps, TFormat>(this TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => ops.GetNumber(input).Map(d => (short)d);
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<short>.Fail(num.ErrorMessage)
+            : DataResult<short>.Success((short)num.GetOrThrow());
+    }
 
     public static DataResult<int> GetInt32<TOps, TFormat>(this TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => ops.GetNumber(input).Map(d => (int)d);
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<int>.Fail(num.ErrorMessage)
+            : DataResult<int>.Success((int)num.GetOrThrow());
+    }
 
     public static DataResult<long> GetInt64<TOps, TFormat>(this TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => ops.GetNumber(input).Map(d => (long)d);
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<long>.Fail(num.ErrorMessage)
+            : DataResult<long>.Success((long)num.GetOrThrow());
+    }
 
     public static DataResult<float> GetFloat<TOps, TFormat>(this TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => ops.GetNumber(input).Map(d => (float)d);
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<float>.Fail(num.ErrorMessage)
+            : DataResult<float>.Success((float)num.GetOrThrow());
+    }
 
     public static DataResult<double> GetDouble<TOps, TFormat>(this TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => ops.GetNumber(input).Map(d => (double)d);
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<double>.Fail(num.ErrorMessage)
+            : DataResult<double>.Success((double)num.GetOrThrow());
+    }
 }

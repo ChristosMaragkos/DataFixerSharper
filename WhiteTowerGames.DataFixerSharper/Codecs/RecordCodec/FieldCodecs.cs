@@ -50,7 +50,7 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
         if (value.IsError)
             return DataResult<(TField, TFormat)>.Fail(value.ErrorMessage);
 
-        input = ops.RemoveFromInput(input, ops.CreateString(_name));
+        input = ops.RemoveFromInput(input, _name);
         return DataResult<(TField, TFormat)>.Success((value.GetOrThrow(), input));
     }
 
@@ -99,7 +99,7 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         if (value.IsError) // if the value was found, but malformed
             return DataResult<(TField, TFormat)>.Fail(value.ErrorMessage);
 
-        input = ops.RemoveFromInput(input, ops.CreateString(_name));
+        input = ops.RemoveFromInput(input, _name);
         return DataResult<(TField, TFormat)>.Success((value.GetOrThrow(), input));
     }
 

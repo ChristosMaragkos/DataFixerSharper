@@ -38,10 +38,9 @@ internal readonly struct DispatchCodec<TBase, TDis> : ICodec<TBase>
             );
 
         var discriminator = discrResult.GetOrThrow();
-        var typeKey = ops.CreateString(_discriminatorKeyName);
         var innerCodec = _codecGetter(discriminator);
 
-        var inputWithoutType = ops.RemoveFromInput(input, typeKey);
+        var inputWithoutType = ops.RemoveFromInput(input, _discriminatorKeyName);
 
         return innerCodec.Decode(ops, inputWithoutType);
     }

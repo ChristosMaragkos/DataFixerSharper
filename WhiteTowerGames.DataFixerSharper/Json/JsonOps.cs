@@ -20,6 +20,12 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     private static readonly JsonByteBuffer TrueValue = "true"u8.ToArray();
     private static readonly JsonByteBuffer FalseValue = "false"u8.ToArray();
 
+    private const string NumNotFound = "Could not fetch numeric value - the value was not found";
+    private const string BoolNotFound = "Could not fetch boolean value - the value was not found";
+    private const string StringNotFound = "Could not fetch string value - the value was not found";
+    private const string KeyNotFound = "Could not fetch keyed value - the key was not found";
+    private const string EmptyInput = "Input was empty.";
+
     #region Value Creation
     public JsonByteBuffer Empty() => EmptyValue;
 
@@ -49,13 +55,13 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     {
         var reader = new Utf8JsonReader(input, true, default);
         if (!reader.Read())
-            return DataResult<decimal>.Fail("Input was empty");
+            return DataResult<decimal>.Fail(EmptyInput);
 
         return reader.TokenType switch
         {
             JsonTokenType.Number when reader.TryGetDecimal(out var num) =>
                 DataResult<decimal>.Success(num),
-            _ => DataResult<decimal>.Fail($"Expected number, instead got {reader.TokenType}"),
+            _ => DataResult<decimal>.Fail(NumNotFound),
         };
     }
 
@@ -64,13 +70,11 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     {
         var reader = new Utf8JsonReader(input, true, default);
         if (!reader.Read())
-            return DataResult<string>.Fail("Input was empty");
+            return DataResult<string>.Fail(EmptyInput);
 
         return reader.TokenType == JsonTokenType.String
             ? DataResult<string>.Success(reader.GetString()!)
-            : DataResult<string>.Fail(
-                $"Expected JSON string literal, instead got {reader.TokenType}"
-            );
+            : DataResult<string>.Fail(StringNotFound);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -78,13 +82,13 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     {
         var reader = new Utf8JsonReader(input);
         if (!reader.Read())
-            return DataResult<bool>.Fail("Input was empty");
+            return DataResult<bool>.Fail(EmptyInput);
 
         return reader.TokenType switch
         {
             JsonTokenType.True => DataResult<bool>.Success(true),
             JsonTokenType.False => DataResult<bool>.Success(false),
-            _ => DataResult<bool>.Fail($"Expected boolean, instead got {reader.TokenType}"),
+            _ => DataResult<bool>.Fail(BoolNotFound),
         };
     }
 
@@ -94,9 +98,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         var reader = new Utf8JsonReader(input, true, default);
 
         if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
-            return DataResult<JsonByteBuffer>.Fail(
-                $"Could not fetch value under key '{name}' - input was not a JSON object."
-            );
+            return DataResult<JsonByteBuffer>.Fail(KeyNotFound);
 
         while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
         {
@@ -112,9 +114,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
             reader.Skip(); // just skip for other properties
         }
 
-        return DataResult<JsonByteBuffer>.Fail(
-            $"Could not fetch value under key '{name}' - the key was not found."
-        );
+        return DataResult<JsonByteBuffer>.Fail(KeyNotFound);
     }
     #endregion
 
@@ -136,13 +136,11 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
             );
 
         var writer = list.Writer;
-        var json = new Utf8JsonWriter(writer);
 
         if (writer.WrittenSpan[^1] != (byte)'[') // if the last written byte was the opening bracket (i.e. the list is empty), no need for a comma
             writer.Write(","u8);
 
         writer.Write(element);
-        json.Flush();
 
         return DataResult<JsonByteBuffer>.Success(list); // we return a new struct, but it points to the same memory region as the other one.
     }
@@ -283,7 +281,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public JsonByteBuffer RemoveFromInput(JsonByteBuffer input, JsonByteBuffer value) => input; // mutating the input while decoding is useless since our lookups are by-key
+    public JsonByteBuffer RemoveFromInput(JsonByteBuffer input, string valueKey) => input; // mutating the input while decoding is useless since our lookups are by-key
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static bool IsEmptyJson(in JsonByteBuffer buffer)

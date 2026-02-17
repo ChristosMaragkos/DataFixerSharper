@@ -38,6 +38,19 @@ public readonly struct RecordCodec1<T, TF> : ICodec<T>
         var finalPrefix = ops.AppendToPrefix(prefix, enc0.GetOrThrow());
         return DataResult<TFormat>.Success(finalPrefix);
     }
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
+        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
+
+    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var parsed = Decode(ops, input);
+        if (parsed.IsError)
+            return DataResult<T>.Fail(parsed.ErrorMessage);
+
+        return DataResult<T>.Success(parsed.GetOrThrow().Item1);
+    }
 }
 
 public readonly struct RecordCodec2<T, TF, TF1> : ICodec<T>
@@ -89,6 +102,19 @@ public readonly struct RecordCodec2<T, TF, TF1> : ICodec<T>
 
         var finalPrefix = ops.AppendToPrefix(prefix, enc1.GetOrThrow());
         return DataResult<TFormat>.Success(finalPrefix);
+    }
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
+        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
+
+    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var parsed = Decode(ops, input);
+        if (parsed.IsError)
+            return DataResult<T>.Fail(parsed.ErrorMessage);
+
+        return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 }
 
@@ -158,5 +184,18 @@ public readonly struct RecordCodec3<T, TF, TF1, TF2> : ICodec<T>
 
         var finalPrefix = ops.AppendToPrefix(prefix, enc2.GetOrThrow());
         return DataResult<TFormat>.Success(finalPrefix);
+    }
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
+        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
+
+    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var parsed = Decode(ops, input);
+        if (parsed.IsError)
+            return DataResult<T>.Fail(parsed.ErrorMessage);
+
+        return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 }

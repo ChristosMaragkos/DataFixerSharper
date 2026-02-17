@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Running;
 using WhiteTowerGames.DataFixerSharper;
 using WhiteTowerGames.DataFixerSharper.Codecs;
@@ -26,8 +27,8 @@ public class CodecBenchmarks
         instance =>
             instance
                 .WithFields(
-                    BuiltinCodecs.String.Field((Person person) => person.Name, "name"),
-                    BuiltinCodecs.Int32.Field((Person person) => person.Age, "age")
+                    BuiltinCodecs.String.Field((Person person) => person.Name, "Name"),
+                    BuiltinCodecs.Int32.Field((Person person) => person.Age, "Age")
                 )
                 .WithCtor((name, age) => new Person(name, age))
     );
@@ -75,15 +76,15 @@ public class CodecBenchmarks
         Encoding.UTF8.GetBytes("""{"Name":"John","Age":10}""")
     );
 
-    private static readonly JsonByteBuffer MemoryIntegers = new JsonByteBuffer(
-        Encoding.UTF8.GetBytes("[1,2,3]")
-    );
-
     [Benchmark]
     public void Codec_Serialize_IntArray()
     {
-        IntegerArrayCodec.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, Integers);
+        IntegerArrayCodec.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, Integers).GetOrThrow();
     }
+
+    private static readonly JsonByteBuffer MemoryIntegers = new JsonByteBuffer(
+        Encoding.UTF8.GetBytes("[1,2,3]")
+    );
 
     [Benchmark]
     public void Codec_Deserialize_IntArray()
@@ -97,5 +98,10 @@ internal class Program
     public static void Main(string[] args)
     {
         BenchmarkRunner.Run<CodecBenchmarks>();
+        //     var bench = new CodecBenchmarks();
+        //     for (var i = 0; i < 100; i++)
+        //         bench.Codec_Deserialize();
+        //     for (var i = 0; i < 10000; i++)
+        //         bench.Codec_Deserialize();
     }
 }

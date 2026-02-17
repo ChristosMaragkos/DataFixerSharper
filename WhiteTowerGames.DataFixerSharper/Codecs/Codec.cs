@@ -44,7 +44,14 @@ public interface ICodec<T> : ICodec
         where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => Decode(ops, input).Map(pair => pair.Item1);
+        where TOps : IDynamicOps<TFormat>
+    {
+        var parsed = Decode(ops, input);
+        if (parsed.IsError)
+            return DataResult<T>.Fail(parsed.ErrorMessage);
+
+        return DataResult<T>.Success(parsed.GetOrThrow().Item1);
+    }
 
     public ICodec<List<T>> ForList() => new ListCodec<T>(this);
 

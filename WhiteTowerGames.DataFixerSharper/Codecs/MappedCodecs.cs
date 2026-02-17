@@ -9,7 +9,7 @@ namespace WhiteTowerGames.DataFixerSharper.Codecs;
 // fail early and avoid exceptions.
 
 /// A <-> B always valid (for example, converting between an integer and a float)
-internal class SafeMapCodec<TFrom, TTo> : ICodec<TTo>
+internal readonly struct SafeMapCodec<TFrom, TTo> : ICodec<TTo>
 {
     private readonly ICodec<TFrom> _underlying;
     private readonly Func<TFrom, TTo> _to;
@@ -31,12 +31,18 @@ internal class SafeMapCodec<TFrom, TTo> : ICodec<TTo>
     public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        return _underlying.Decode(ops, input).Map(pair => (_to(pair.Item1), pair.Item2));
+        var decoded = _underlying.Decode(ops, input);
+        if (decoded.IsError)
+            return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
+
+        return DataResult<(TTo, TFormat)>.Success(
+            (_to(decoded.GetOrThrow().Item1), decoded.GetOrThrow().Item2)
+        );
     }
 }
 
 // A <-> B not always valid (rare, but good to have)
-internal class UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
+internal readonly struct UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
 {
     private readonly ICodec<TFrom> _underlying;
     private readonly Func<TFrom, DataResult<TTo>> _to;
@@ -68,14 +74,21 @@ internal class UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
     public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        return _underlying
-            .Decode(ops, input)
-            .UnsafeMap(pair => _to(pair.Item1).Map(mapped => (mapped, pair.Item2)));
+        var decoded = _underlying.Decode(ops, input);
+        if (decoded.IsError)
+            return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
+
+        var pair = decoded.GetOrThrow();
+        var transformed = _to(pair.Item1);
+        if (transformed.IsError)
+            return DataResult<(TTo, TFormat)>.Fail(transformed.ErrorMessage);
+
+        return DataResult<(TTo, TFormat)>.Success((transformed.GetOrThrow(), pair.Item2));
     }
 }
 
 // A -> B always valid, B -> A not always valid (for example, string to integer)
-internal class Safe2UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
+internal readonly struct Safe2UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
 {
     private readonly ICodec<TFrom> _underlying;
     private readonly Func<TFrom, TTo> _to;
@@ -107,12 +120,18 @@ internal class Safe2UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
     public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        return _underlying.Decode(ops, input).Map(pair => (_to(pair.Item1), pair.Item2));
+        var decoded = _underlying.Decode(ops, input);
+        if (decoded.IsError)
+            return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
+
+        return DataResult<(TTo, TFormat)>.Success(
+            (_to(decoded.GetOrThrow().Item1), decoded.GetOrThrow().Item2)
+        );
     }
 }
 
 // A -> B not always valid, but B -> A always valid (for example, float array to 3D vector)
-internal class Unsafe2SafeMapCodec<TFrom, TTo> : ICodec<TTo>
+internal readonly struct Unsafe2SafeMapCodec<TFrom, TTo> : ICodec<TTo>
 {
     private readonly ICodec<TFrom> _underlying;
     private readonly Func<TFrom, DataResult<TTo>> _to;
@@ -138,8 +157,15 @@ internal class Unsafe2SafeMapCodec<TFrom, TTo> : ICodec<TTo>
     public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        return _underlying
-            .Decode(ops, input)
-            .UnsafeMap(pair => _to(pair.Item1).Map(mapped => (mapped, pair.Item2)));
+        var decoded = _underlying.Decode(ops, input);
+        if (decoded.IsError)
+            return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
+
+        var pair = decoded.GetOrThrow();
+        var transformed = _to(pair.Item1);
+        if (transformed.IsError)
+            return DataResult<(TTo, TFormat)>.Fail(transformed.ErrorMessage);
+
+        return DataResult<(TTo, TFormat)>.Success((transformed.GetOrThrow(), pair.Item2));
     }
 }

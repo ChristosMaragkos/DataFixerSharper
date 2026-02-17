@@ -13,8 +13,15 @@ internal readonly struct UpcastCodec<TBase, TDer> : ICodec<TBase>
     }
 
     public DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> =>
-        _underlying.Decode(ops, input).Map(result => ((TBase)result.Item1, result.Item2));
+        where TOps : IDynamicOps<TFormat>
+    {
+        var decodedResult = _underlying.Decode(ops, input);
+        if (decodedResult.IsError)
+            return DataResult<(TBase, TFormat)>.Fail(decodedResult.ErrorMessage);
+
+        var decoded = decodedResult.GetOrThrow();
+        return DataResult<(TBase, TFormat)>.Success(((TBase)decoded.Item1, decoded.Item2));
+    }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
