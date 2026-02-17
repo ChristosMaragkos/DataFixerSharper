@@ -8,7 +8,7 @@ public readonly struct DataResult<T>
 
     public bool IsError => _isError;
 
-    public T GetOrThrow() => !_isError ? _value : throw new InvalidOperationException();
+    public T GetOrThrow() => !_isError ? _value : throw new InvalidOperationException(ErrorMessage);
 
     public T ResultOrPartial() => GetOrThrow();
 
