@@ -20,11 +20,7 @@ internal readonly struct EitherCodec<T> : ICodec<T>
         if (!firstTry.IsError)
             return firstTry;
 
-        var secondTry = _second.Decode(ops, input);
-        if (!secondTry.IsError)
-            return secondTry;
-
-        return DataResult<(T, TFormat)>.Fail(secondTry.ErrorMessage);
+        return _second.Decode(ops, input);
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
@@ -34,10 +30,6 @@ internal readonly struct EitherCodec<T> : ICodec<T>
         if (!firstTry.IsError)
             return firstTry;
 
-        var secondTry = _second.Encode(input, ops, prefix);
-        if (!secondTry.IsError)
-            return secondTry;
-
-        return DataResult<TFormat>.Fail(secondTry.ErrorMessage);
+        return _second.Encode(input, ops, prefix);
     }
 }

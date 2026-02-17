@@ -27,7 +27,6 @@ public interface IDynamicOps<TFormat>
     #region Maps
     TFormat CreateEmptyMap();
     DataResult<TFormat> AddToMap(TFormat map, TFormat key, TFormat value);
-
     DataResult<Unit> ReadMap<TState, TCon>(TFormat input, ref TState state, TCon consumer)
         where TState : allows ref struct
         where TCon : IMapConsumer<TState, TFormat>;
