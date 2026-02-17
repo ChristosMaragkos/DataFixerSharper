@@ -2,17 +2,17 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
 
-internal class DispatchCodec<TBase, TDis> : Codec<TBase>
+internal readonly struct DispatchCodec<TBase, TDis> : ICodec<TBase>
 {
     private readonly Func<TBase, TDis> _discriminatorGetter;
     private readonly string _discriminatorKeyName;
-    private readonly Codec<TDis> _discriminatorCodec;
-    private readonly Func<TDis, Codec<TBase>> _codecGetter;
+    private readonly ICodec<TDis> _discriminatorCodec;
+    private readonly Func<TDis, ICodec<TBase>> _codecGetter;
 
     public DispatchCodec(
         Func<TBase, TDis> discriminatorGetter,
-        Codec<TDis> discriminatorCodec,
-        Func<TDis, Codec<TBase>> codecGetter,
+        ICodec<TDis> discriminatorCodec,
+        Func<TDis, ICodec<TBase>> codecGetter,
         string discriminatorKeyName = "type"
     )
     {
@@ -22,7 +22,8 @@ internal class DispatchCodec<TBase, TDis> : Codec<TBase>
         _codecGetter = codecGetter;
     }
 
-    public override DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
     {
         var discrField = ops.GetValue(input, _discriminatorKeyName);
         if (discrField.IsError)
@@ -48,7 +49,8 @@ internal class DispatchCodec<TBase, TDis> : Codec<TBase>
         return valueResult;
     }
 
-    public override DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
     {
         var discr = _discriminatorGetter(input);
         var discrResult = _discriminatorCodec.EncodeStart<TOps, TFormat>(ops, discr);

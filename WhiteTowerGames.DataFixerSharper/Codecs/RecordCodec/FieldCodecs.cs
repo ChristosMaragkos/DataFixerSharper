@@ -5,13 +5,13 @@ namespace WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
 public static class CodecFieldExtensions
 {
     public static FieldCodec<T, TField> Field<T, TField>(
-        this Codec<TField> codec,
+        this ICodec<TField> codec,
         Func<T, TField> getter,
         string name
     ) => new FieldCodec<T, TField>(codec, name, getter);
 
     public static OptionalFieldCodec<T, TField> OptionalField<T, TField>(
-        this Codec<TField> codec,
+        this ICodec<TField> codec,
         Func<T, TField> getter,
         string name,
         TField defaultValue
@@ -28,11 +28,11 @@ public interface IFieldCodec<T, TField>
 
 public class FieldCodec<T, TField> : IFieldCodec<T, TField>
 {
-    private readonly Codec<TField> _codec;
+    private readonly ICodec<TField> _codec;
     private readonly string _name;
     private readonly Func<T, TField> _getter;
 
-    public FieldCodec(Codec<TField> codec, string name, Func<T, TField> getter)
+    public FieldCodec(ICodec<TField> codec, string name, Func<T, TField> getter)
     {
         _codec = codec;
         _name = name;
@@ -70,13 +70,13 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
 
 public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
 {
-    private readonly Codec<TField> _codec;
+    private readonly ICodec<TField> _codec;
     private readonly string _name;
     private readonly Func<T, TField> _getter;
     private readonly TField _defaultValue;
 
     public OptionalFieldCodec(
-        Codec<TField> codec,
+        ICodec<TField> codec,
         string name,
         Func<T, TField> getter,
         TField defaultValue

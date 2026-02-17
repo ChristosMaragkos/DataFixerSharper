@@ -22,7 +22,7 @@ public class CodecBenchmarks
 
     public sealed record FriendGroup(params Person[] Members);
 
-    private static readonly Codec<Person> PersonCodec = RecordCodecBuilder.Create<Person>(
+    private static readonly ICodec<Person> PersonCodec = RecordCodecBuilder.Create<Person>(
         instance =>
             instance
                 .WithFields(
@@ -32,7 +32,7 @@ public class CodecBenchmarks
                 .WithCtor((name, age) => new Person(name, age))
     );
 
-    private static readonly Codec<Relationship> RelationshipCodec =
+    private static readonly ICodec<Relationship> RelationshipCodec =
         RecordCodecBuilder.Create<Relationship>(instance =>
             instance
                 .WithFields(
@@ -42,7 +42,7 @@ public class CodecBenchmarks
                 .WithCtor((p1, p2) => new Relationship(p1, p2))
         );
 
-    private static readonly Codec<FriendGroup> FriendGroupCodec =
+    private static readonly ICodec<FriendGroup> FriendGroupCodec =
         RecordCodecBuilder.Create<FriendGroup>(instance =>
             instance
                 .WithFields(
@@ -51,7 +51,7 @@ public class CodecBenchmarks
                 .WithCtor(people => new FriendGroup(people))
         );
 
-    private static readonly Codec<int[]> IntegerArrayCodec = BuiltinCodecs.Int32.ForArray();
+    private static readonly ICodec<int[]> IntegerArrayCodec = BuiltinCodecs.Int32.ForArray();
     private static readonly int[] Integers = new int[] { 1, 2, 3 };
 
     [Benchmark]

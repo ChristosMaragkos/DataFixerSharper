@@ -2,19 +2,17 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
 
-internal class ListCodec<TElement> : Codec<List<TElement>>
+internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
 {
-    private readonly Codec<TElement> _underlying;
+    private readonly ICodec<TElement> _underlying;
 
-    public ListCodec(Codec<TElement> underlying)
+    public ListCodec(ICodec<TElement> underlying)
     {
         _underlying = underlying;
     }
 
-    public override DataResult<(List<TElement>, TFormat)> Decode<TOps, TFormat>(
-        TOps ops,
-        TFormat input
-    )
+    public DataResult<(List<TElement>, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
     {
         // make a list out of TFormat, accept every element in it, add it to our ref list.
         var consumer = new ListConsumer<TOps, TFormat>(_underlying, ops);
@@ -30,11 +28,8 @@ internal class ListCodec<TElement> : Codec<List<TElement>>
         return DataResult<(List<TElement>, TFormat)>.Success((state.Elements, input));
     }
 
-    public override DataResult<TFormat> Encode<TOps, TFormat>(
-        List<TElement> input,
-        TOps ops,
-        TFormat prefix
-    )
+    public DataResult<TFormat> Encode<TOps, TFormat>(List<TElement> input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
     {
         var list = DataResult<TFormat>.Success(ops.CreateEmptyList());
         foreach (var item in input)
@@ -56,10 +51,10 @@ internal class ListCodec<TElement> : Codec<List<TElement>>
     private readonly struct ListConsumer<TOps, TFormat> : ICollectionConsumer<DecodeState, TFormat>
         where TOps : IDynamicOps<TFormat>
     {
-        private readonly Codec<TElement> _underlyingCodec;
+        private readonly ICodec<TElement> _underlyingCodec;
         private readonly TOps _ops;
 
-        public ListConsumer(Codec<TElement> underlyingCodec, TOps ops)
+        public ListConsumer(ICodec<TElement> underlyingCodec, TOps ops)
         {
             _underlyingCodec = underlyingCodec;
             _ops = ops;
@@ -72,7 +67,7 @@ internal class ListCodec<TElement> : Codec<List<TElement>>
 
             var decoded = _underlyingCodec.Parse(_ops, item);
             if (decoded.IsError)
-                collection.ErrorStatus = decoded.Map(result => new List<TElement>() { result });
+                collection.ErrorStatus = DataResult<Unit>.Fail(decoded.ErrorMessage);
             else
                 collection.Add(decoded.GetOrThrow());
         }
@@ -81,12 +76,12 @@ internal class ListCodec<TElement> : Codec<List<TElement>>
     private ref struct DecodeState
     {
         public readonly List<TElement> Elements;
-        public DataResult<List<TElement>> ErrorStatus;
+        public DataResult<Unit> ErrorStatus;
 
         public DecodeState()
         {
             Elements = new();
-            ErrorStatus = DataResult<List<TElement>>.Success(default!);
+            ErrorStatus = DataResult<Unit>.Success(default);
         }
 
         public void Add(TElement item) => Elements.Add(item);

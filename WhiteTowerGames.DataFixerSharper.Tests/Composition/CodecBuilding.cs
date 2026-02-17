@@ -20,7 +20,7 @@ public class CodecBuilding
         yield return new object[] { new Person("Jane Doe", 0) };
     }
 
-    private static readonly Codec<Person> PersonCodec = RecordCodecBuilder.Create<Person>(
+    private static readonly ICodec<Person> PersonCodec = RecordCodecBuilder.Create<Person>(
         instance =>
             instance
                 .WithFields(
@@ -30,7 +30,7 @@ public class CodecBuilding
                 .WithCtor((name, age) => new Person(name, age))
     );
 
-    private static readonly Codec<Relationship> RelationshipCodec =
+    private static readonly ICodec<Relationship> RelationshipCodec =
         RecordCodecBuilder.Create<Relationship>(instance =>
             instance
                 .WithFields(
@@ -40,7 +40,7 @@ public class CodecBuilding
                 .WithCtor((p1, p2) => new Relationship(p1, p2))
         );
 
-    private static readonly Codec<FriendGroup> FriendGroupCodec =
+    private static readonly ICodec<FriendGroup> FriendGroupCodec =
         RecordCodecBuilder.Create<FriendGroup>(instance =>
             instance
                 .WithFields(
