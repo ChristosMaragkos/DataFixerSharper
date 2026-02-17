@@ -25,49 +25,45 @@ internal readonly struct DispatchCodec<TBase, TDis> : ICodec<TBase>
     public DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var discrField = ops.GetValue(input, _discriminatorKeyName);
-        if (discrField.IsError)
+        var typeResult = ops.GetValue(input, _discriminatorKeyName);
+        if (typeResult.IsError)
             return DataResult<(TBase, TFormat)>.Fail(
-                $"Input was missing polymorphic type discriminator named {_discriminatorKeyName} - [{discrField.ErrorMessage}]"
+                $"Input was missing polymorphic type discriminator named {_discriminatorKeyName} - [{typeResult.ErrorMessage}]"
             );
 
-        var decodedDiscr = _discriminatorCodec.Parse<TOps, TFormat>(ops, discrField.GetOrThrow());
-        if (decodedDiscr.IsError)
+        var discrResult = _discriminatorCodec.Parse<TOps, TFormat>(ops, typeResult.GetOrThrow());
+        if (discrResult.IsError)
             return DataResult<(TBase, TFormat)>.Fail(
-                $"Failed to decode type discriminator: [{decodedDiscr.ErrorMessage}]"
+                $"Failed to decode type discriminator: [{discrResult.ErrorMessage}]"
             );
 
-        var discriminator = decodedDiscr.GetOrThrow();
-        var codec = _codecGetter(discriminator);
+        var discriminator = discrResult.GetOrThrow();
+        var typeKey = ops.CreateString(_discriminatorKeyName);
+        var innerCodec = _codecGetter(discriminator);
 
-        ops.RemoveFromInput(
-            input,
-            ops.Merge(ops.CreateString(_discriminatorKeyName), discrField.GetOrThrow())
-        );
+        var inputWithoutType = ops.RemoveFromInput(input, typeKey);
 
-        var valueResult = codec.Decode(ops, input);
-        return valueResult;
+        return innerCodec.Decode(ops, inputWithoutType);
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
     {
-        var discr = _discriminatorGetter(input);
-        var discrResult = _discriminatorCodec.EncodeStart<TOps, TFormat>(ops, discr);
+        var discriminator = _discriminatorGetter(input);
+        var discrEncoded = _discriminatorCodec.EncodeStart<TOps, TFormat>(ops, discriminator);
+        if (discrEncoded.IsError)
+            return discrEncoded;
 
-        if (discrResult.IsError)
-            return discrResult;
+        var map = ops.CreateEmptyMap();
+        var typeKey = ops.CreateString(_discriminatorKeyName);
 
-        // Add type discriminator to prefix
-        var discriminated = ops.MergeAndAppend(
-            prefix,
-            ops.CreateString(_discriminatorKeyName)!,
-            discrResult.GetOrThrow()
-        );
+        var typedMap = ops.AddToMap(map, typeKey, discrEncoded.GetOrThrow());
+        if (typedMap.IsError)
+            return typedMap;
 
-        var codec = _codecGetter(discr);
-        var valueResult = codec.Encode(input, ops, discriminated);
+        var combinedPrefix = ops.AppendToPrefix(prefix, typedMap.GetOrThrow());
 
-        return valueResult;
+        var innerCodec = _codecGetter(discriminator);
+        return innerCodec.Encode(input, ops, combinedPrefix);
     }
 }

@@ -48,6 +48,9 @@ public interface ICodec<T> : ICodec
 
     public ICodec<List<T>> ForList() => new ListCodec<T>(this);
 
+    public ICodec<T[]> ForArray() =>
+        ForList().SafeMap<T[]>(array => array.ToList(), list => list.ToArray());
+
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T <-> TOther always valid.
     public ICodec<TOther> SafeMap<TOther>(Func<TOther, T> from, Func<T, TOther> to) =>
         new SafeMapCodec<T, TOther>(this, to, from);

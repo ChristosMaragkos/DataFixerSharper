@@ -45,7 +45,7 @@ internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
             list = appendedValue;
         }
         var finalValue = ops.AppendToPrefix(prefix, list.GetOrThrow());
-        return DataResult<TFormat>.Success(prefix);
+        return DataResult<TFormat>.Success(finalValue);
     }
 
     private readonly struct ListConsumer<TOps, TFormat> : ICollectionConsumer<DecodeState, TFormat>

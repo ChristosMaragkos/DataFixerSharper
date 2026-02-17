@@ -9,6 +9,11 @@ public static class RecordCodecBuilder
 public readonly struct Instance<T>
 {
     public MapCodec1<T, TF> WithFields<TF>(IFieldCodec<T, TF> f1) => new MapCodec1<T, TF>(f1);
+
+    public MapCodec2<T, TF, TF1> WithFields<TF, TF1>(
+        IFieldCodec<T, TF> f0,
+        IFieldCodec<T, TF1> f1
+    ) => new MapCodec2<T, TF, TF1>(f0, f1);
 }
 
 public readonly struct MapCodec1<T, TF>
