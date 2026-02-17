@@ -105,7 +105,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
                 reader.Read(); // move to value
                 var start = (int)reader.TokenStartIndex;
                 reader.Skip(); // skip the entire thing
-                var length = (int)reader.BytesConsumed - start; // cound the bytes
+                var length = (int)reader.BytesConsumed - start; // count the bytes
 
                 return DataResult<JsonByteBuffer>.Success(input.Memory.Slice(start, length));
             }
