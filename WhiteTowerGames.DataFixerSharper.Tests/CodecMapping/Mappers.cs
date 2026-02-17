@@ -27,7 +27,7 @@ public class Mappers
         var vec = new Vector3(1f, 2f, 3f);
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, vec).GetOrThrow();
+        var encoded = codec.Encode(vec, JsonOps, JsonOps.Empty()).GetOrThrow();
         var encodedArray = encoded
             .ToJsonArray()
             .Select(node => float.Parse(node!.ToJsonString()))
@@ -57,7 +57,7 @@ public class Mappers
         float[] array = { 1f, 2f, 3f };
 
         // When
-        var encoded = floatArrayCodec.EncodeStart(JsonOps, array).GetOrThrow();
+        var encoded = floatArrayCodec.Encode(array, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = vectorCodec.Parse(JsonOps, encoded);
 
         // Then
@@ -84,7 +84,7 @@ public class Mappers
         float[] array = { 1f, 2f, 3f, 4f };
 
         // When
-        var encoded = floatArrayCodec.EncodeStart(JsonOps, array).GetOrThrow();
+        var encoded = floatArrayCodec.Encode(array, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = vectorCodec.Parse(JsonOps, encoded);
 
         // Then

@@ -31,7 +31,7 @@ public class EnumCodecs
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
-            var encoded = codec.EncodeStart(JsonOps, value).GetOrThrow();
+            var encoded = codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
             var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
             // Then
@@ -47,7 +47,7 @@ public class EnumCodecs
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
-            var encoded = codec.EncodeStart(JsonOps, value).GetOrThrow();
+            var encoded = codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
             var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
             // Then
@@ -63,7 +63,7 @@ public class EnumCodecs
         var testValue = BitFlags.One | BitFlags.Two;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, testValue).GetOrThrow();
+        var encoded = codec.Encode(testValue, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -79,7 +79,7 @@ public class EnumCodecs
         var bitflags = BitFlags.One | BitFlags.Two;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, bitflags).GetOrThrow();
+        var encoded = codec.Encode(bitflags, JsonOps, JsonOps.Empty()).GetOrThrow();
         var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
 
         // Then
@@ -95,7 +95,7 @@ public class EnumCodecs
         var value = CardinalDirections.North | CardinalDirections.South;
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, value).GetOrThrow();
+        var encoded = codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
 
         // Then
         Assert.True(codec.Parse(JsonOps, encoded).IsError);

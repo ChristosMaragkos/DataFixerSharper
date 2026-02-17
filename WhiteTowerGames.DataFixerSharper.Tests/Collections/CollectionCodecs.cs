@@ -13,10 +13,10 @@ public class CollectionCodecs
     public void CollectionCodec_Roundrtrip_DoesNotMutate(params int[] numbers)
     {
         // Given
-        var codec = BuiltinCodecs.Int32.ForEnumerable();
+        var codec = BuiltinCodecs.Int32.ForArray();
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, numbers);
+        var encoded = codec.Encode(numbers, JsonOps, JsonOps.Empty());
         var decoded = codec.Parse(JsonOps, encoded.GetOrThrow());
 
         // Then
@@ -28,27 +28,28 @@ public class CollectionCodecs
     [Theory]
     [InlineData(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 })]
     [InlineData(new int[] { }, new int[] { 4, 5, 6 })]
-    public void Append_CollectionToCollection_CreatesTwoCollections(
-        int[] numbersFirst,
-        int[] numbersSecond
-    )
+    public void Append_Collection_ToCollection_Merges(int[] numbersFirst, int[] numbersSecond)
     {
+        // Given
         var codec = BuiltinCodecs.Int32.ForArray();
+        var merged = numbersFirst.Concat(numbersSecond).ToArray();
 
-        var encodedFirst = codec.EncodeStart(JsonOps, numbersFirst);
+        // When
+        var encodedFirst = codec.Encode(numbersFirst, JsonOps, JsonOps.Empty());
         var encodedSecond = codec.Encode(numbersSecond, JsonOps, encodedFirst.GetOrThrow());
-        var decodedFirst = codec.Decode(JsonOps, encodedSecond.GetOrThrow());
-        var decodedSecond = codec.Parse(JsonOps, decodedFirst.GetOrThrow().Item2);
+        var encodedMerged = codec.Encode(merged, JsonOps, JsonOps.Empty());
 
-        Assert.False(encodedFirst.IsError, encodedFirst.ErrorMessage);
+        var decoded = codec.Parse(JsonOps, encodedSecond.GetOrThrow());
+        var decodedMerged = codec.Parse(JsonOps, encodedMerged.GetOrThrow());
+
+        // Then
         Assert.False(encodedSecond.IsError, encodedSecond.ErrorMessage);
-        Assert.False(decodedFirst.IsError, decodedFirst.ErrorMessage);
-        Assert.False(decodedSecond.IsError, decodedSecond.ErrorMessage);
+        Assert.False(decoded.IsError, decoded.ErrorMessage);
+        Assert.False(decodedMerged.IsError, decodedMerged.ErrorMessage);
         Assert.True(
-            decodedFirst.GetOrThrow().Item1.SequenceEqual(numbersFirst),
-            $"Expected: {ConcatSequence(numbersFirst)}\n Got: {decodedFirst.GetOrThrow().Item1}"
+            decoded.GetOrThrow().SequenceEqual(decodedMerged.GetOrThrow()),
+            $"Expected: {ConcatSequence(decodedMerged.GetOrThrow())}\nGot: {ConcatSequence(decoded.GetOrThrow())}"
         );
-        Assert.True(decodedSecond.GetOrThrow().SequenceEqual(numbersSecond));
     }
 
     [Fact]
@@ -59,7 +60,7 @@ public class CollectionCodecs
         var codec = ICodec.Dictionary<string, int>(BuiltinCodecs.String, BuiltinCodecs.Int32);
 
         // When
-        var encoded = codec.EncodeStart(JsonOps, dict);
+        var encoded = codec.Encode(dict, JsonOps, JsonOps.Empty());
         var decoded = codec.Parse(JsonOps, encoded.GetOrThrow());
         var value = decoded.GetOrThrow();
 
