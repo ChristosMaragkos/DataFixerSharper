@@ -1,6 +1,6 @@
 namespace WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
 
-public class Instance<T>
+public readonly ref struct Instance<T>
 {
     public Fm1<T, TF> WithFields<TF>(IFieldCodec<T, TF> f1) => new Fm1<T, TF>(f1);
 

@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
@@ -21,8 +22,17 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #region Value Creation
     public JsonByteBuffer Empty() => EmptyValue;
 
-    public JsonByteBuffer CreateNumeric(decimal number) =>
-        JsonSerializer.SerializeToUtf8Bytes(number);
+    public JsonByteBuffer CreateNumeric(decimal number)
+    {
+        Span<byte> temp = stackalloc byte[32];
+        if (!Utf8Formatter.TryFormat(number, temp, out var byteAmount))
+            return default;
+
+        var buffer = new byte[byteAmount];
+        temp.Slice(0, byteAmount).CopyTo(buffer);
+
+        return new JsonByteBuffer(buffer);
+    }
 
     public JsonByteBuffer CreateString(string value) => JsonSerializer.SerializeToUtf8Bytes(value);
 

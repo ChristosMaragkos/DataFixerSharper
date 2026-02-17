@@ -64,8 +64,7 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
             return encodedValue;
 
         var key = ops.CreateString(_name);
-        var result = ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
-        return result;
+        return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
     }
 }
 
@@ -75,7 +74,6 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
     private readonly string _name;
     private readonly Func<T, TField> _getter;
     private readonly TField _defaultValue;
-    private Dictionary<Type, object> _cachedFieldNames = new();
 
     public OptionalFieldCodec(
         Codec<TField> codec,
@@ -93,44 +91,31 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
     public DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var key = _cachedFieldNames.TryGetValue(typeof(TFormat), out var formatted)
-            ? (TFormat)formatted
-            : CacheName<TOps, TFormat>(ops);
-
-        var fieldResult = ops.GetValue(input, _name);
-        if (fieldResult.IsError)
+        var fetchedValue = ops.GetValue(input, _name);
+        if (fetchedValue.IsError) // if the value was not present
             return DataResult<(TField, TFormat)>.Success((_defaultValue, input));
 
-        var parsed = _codec.Parse<TOps, TFormat>(ops, fieldResult.GetOrThrow());
-        if (parsed.IsError)
-            return DataResult<(TField, TFormat)>.Fail(parsed.ErrorMessage);
+        var value = _codec.Parse(ops, fetchedValue.GetOrThrow());
+        if (value.IsError) // if the value was found, but malformed
+            return DataResult<(TField, TFormat)>.Fail(value.ErrorMessage);
 
-        return parsed.Map(decoded => (decoded, ops.RemoveFromInput(input, key)));
+        input = ops.RemoveFromInput(input, ops.CreateString(_name));
+        return DataResult<(TField, TFormat)>.Success((value.GetOrThrow(), input));
     }
 
-    public IRecordBuilder<TFormat> Encode<TOps, TFormat>(
-        T input,
-        TOps ops,
-        IRecordBuilder<TFormat> builder
-    )
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat accumulator)
         where TOps : IDynamicOps<TFormat>
     {
-        var key = _cachedFieldNames.TryGetValue(typeof(TFormat), out var formatted)
-            ? (TFormat)formatted
-            : CacheName<TOps, TFormat>(ops);
+        var value = _getter(input);
 
-        var fieldValue = _getter(input);
+        if (EqualityComparer<TField>.Default.Equals(value, _defaultValue))
+            return DataResult<TFormat>.Success(accumulator); // don't encode the default value
 
-        var valueResult = _codec.EncodeStart<TOps, TFormat>(ops, fieldValue);
+        var encodedValue = _codec.EncodeStart<TOps, TFormat>(ops, value);
+        if (encodedValue.IsError)
+            return encodedValue;
 
-        return builder.Add(key, valueResult);
-    }
-
-    private TFormat CacheName<TOps, TFormat>(TOps ops)
-        where TOps : IDynamicOps<TFormat>
-    {
-        var value = ops.CreateString(_name)!;
-        _cachedFieldNames[typeof(TFormat)] = value;
-        return value;
+        var key = ops.CreateString(_name);
+        return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
     }
 }
