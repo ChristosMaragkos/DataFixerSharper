@@ -26,33 +26,14 @@ public class CodecBenchmarks
         instance =>
             instance
                 .WithFields(
-                    BuiltinCodecs.String.Field((Person person) => person.Name, "Name"),
-                    BuiltinCodecs.Int32.OptionalField((Person person) => person.Age, "Age", 0)
+                    BuiltinCodecs.String.Field((Person person) => person.Name, "name"),
+                    BuiltinCodecs.Int32.Field((Person person) => person.Age, "age")
                 )
                 .WithCtor((name, age) => new Person(name, age))
     );
 
-    private static readonly ICodec<Relationship> RelationshipCodec =
-        RecordCodecBuilder.Create<Relationship>(instance =>
-            instance
-                .WithFields(
-                    PersonCodec.Field((Relationship rel) => rel.Person1, "Person_1"),
-                    PersonCodec.Field((Relationship rel) => rel.Person2, "Person_2")
-                )
-                .WithCtor((p1, p2) => new Relationship(p1, p2))
-        );
-
-    private static readonly ICodec<FriendGroup> FriendGroupCodec =
-        RecordCodecBuilder.Create<FriendGroup>(instance =>
-            instance
-                .WithFields(
-                    PersonCodec.ForArray().Field((FriendGroup group) => group.Members, "members")
-                )
-                .WithCtor(people => new FriendGroup(people))
-        );
-
-    private static readonly ICodec<int[]> IntegerArrayCodec = BuiltinCodecs.Int32.ForArray();
-    private static readonly int[] Integers = new int[] { 1, 2, 3 };
+    private static readonly ICodec<List<int>> IntegerArrayCodec = BuiltinCodecs.Int32.ForList();
+    private static readonly List<int> Integers = new() { 1, 2, 3 };
 
     [Benchmark]
     public void STJ_Serialize()
@@ -81,33 +62,33 @@ public class CodecBenchmarks
     [Benchmark]
     public void Codec_Serialize()
     {
-        PersonCodec.EncodeStart<JsonOps, ReadOnlyMemory<byte>>(JsonOps, Giannakhs);
+        PersonCodec.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, Giannakhs);
     }
 
     [Benchmark]
     public void Codec_Deserialize()
     {
-        PersonCodec.Parse<JsonOps, ReadOnlyMemory<byte>>(JsonOps, MemoryPerson);
+        PersonCodec.Parse<JsonOps, JsonByteBuffer>(JsonOps, MemoryPerson);
     }
 
-    private static readonly ReadOnlyMemory<byte> MemoryPerson = new ReadOnlyMemory<byte>(
+    private static readonly JsonByteBuffer MemoryPerson = new JsonByteBuffer(
         Encoding.UTF8.GetBytes("""{"Name":"John","Age":10}""")
     );
 
-    private static readonly ReadOnlyMemory<byte> MemoryIntegers = new ReadOnlyMemory<byte>(
-        Encoding.UTF8.GetBytes("{[1,2,3]}")
+    private static readonly JsonByteBuffer MemoryIntegers = new JsonByteBuffer(
+        Encoding.UTF8.GetBytes("[1,2,3]")
     );
 
     [Benchmark]
     public void Codec_Serialize_IntArray()
     {
-        IntegerArrayCodec.EncodeStart<JsonOps, ReadOnlyMemory<byte>>(JsonOps, Integers);
+        IntegerArrayCodec.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, Integers);
     }
 
     [Benchmark]
     public void Codec_Deserialize_IntArray()
     {
-        IntegerArrayCodec.Parse<JsonOps, ReadOnlyMemory<byte>>(JsonOps, MemoryIntegers);
+        IntegerArrayCodec.Parse(JsonOps, MemoryIntegers);
     }
 }
 
