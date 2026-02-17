@@ -77,6 +77,8 @@ internal class DictionaryCodec<TKey, TValue> : Codec<Dictionary<TKey, TValue>>
             encodedMap.Add(new(encodedKey.GetOrThrow(), encodedValue.GetOrThrow()));
         }
 
-        return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, ops.CreateMap(encodedMap)));
+        return DataResult<TFormat>.Success(
+            ops.AppendToPrefix(prefix, ops.CreateEmptyMap(encodedMap))
+        );
     }
 }
