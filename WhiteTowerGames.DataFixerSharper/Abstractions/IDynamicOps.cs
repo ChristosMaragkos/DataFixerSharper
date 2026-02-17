@@ -1,5 +1,3 @@
-using WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
-
 namespace WhiteTowerGames.DataFixerSharper.Abstractions;
 
 public interface IDynamicOps<TFormat>
@@ -20,31 +18,24 @@ public interface IDynamicOps<TFormat>
 
     #region Enumerables
     TFormat CreateEmptyList();
-    DataResult<TFormat> AddToList(TFormat list, TFormat element); // returns data result because the list might not be a list at all.
+    DataResult<TFormat> AddToList(TFormat list, TFormat element);
     DataResult<Unit> ReadList<TState, TCon>(TFormat input, ref TState state, TCon consumer)
         where TState : allows ref struct
         where TCon : ICollectionConsumer<TState, TFormat>;
     #endregion
 
     #region Maps
-    TFormat CreateMap(IEnumerable<KeyValuePair<TFormat, TFormat>> map);
+    TFormat CreateEmptyMap();
+    DataResult<TFormat> AddToMap(TFormat map, TFormat key, TFormat value);
 
     DataResult<Unit> ReadMap<TState, TCon>(TFormat input, ref TState state, TCon consumer)
         where TState : allows ref struct
         where TCon : IMapConsumer<TState, TFormat>;
-
-    TFormat Merge(TFormat key, TFormat value);
-
-    /// <summary>
-    /// Merges two values into a key-value pair and appends to an existing map
-    /// </summary>
-    TFormat MergeAndAppend(TFormat map, TFormat key, TFormat value);
     #endregion
 
     #region Utils
     TFormat AppendToPrefix(TFormat prefix, TFormat value);
     TFormat RemoveFromInput(TFormat input, TFormat value);
-    IRecordBuilder<TFormat> MapBuilder();
     #endregion
 }
 
