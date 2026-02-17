@@ -1,6 +1,5 @@
 using System.Buffers;
 using System.Buffers.Text;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
@@ -15,6 +14,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
     private static JsonByteBuffer BytesFromString(string str) => Encoding.UTF8.GetBytes(str);
 
+    #region Pre-allocated strings
     private static readonly JsonByteBuffer EmptyValue = "{}"u8.ToArray(); // apparently c# lets you generate utf8-encoded strings. How long has this been a thing?
     private static readonly JsonByteBuffer EmptyArrayValue = "[]"u8.ToArray();
     private static readonly JsonByteBuffer TrueValue = "true"u8.ToArray();
@@ -25,11 +25,13 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     private const string StringNotFound = "Could not fetch string value - the value was not found";
     private const string KeyNotFound = "Could not fetch keyed value - the key was not found";
     private const string EmptyInput = "Input was empty.";
+    private const string ImmutableList = "Could not append value: list was read-only or finalized";
+    private const string ImmutableMap = "Could not append to map: map was read-only or finalized.";
+    #endregion
 
     #region Value Creation
     public JsonByteBuffer Empty() => EmptyValue;
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public JsonByteBuffer CreateNumeric(decimal number)
     {
         Span<byte> temp = stackalloc byte[32];
@@ -42,15 +44,12 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(buffer);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public JsonByteBuffer CreateString(string value) => JsonSerializer.SerializeToUtf8Bytes(value);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public JsonByteBuffer CreateBool(bool value) => value ? TrueValue : FalseValue;
     #endregion
 
     #region Value Reading
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<decimal> GetNumber(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input, true, default);
@@ -65,7 +64,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         };
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<string> GetString(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input, true, default);
@@ -77,7 +75,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
             : DataResult<string>.Fail(StringNotFound);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<bool> GetBool(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input);
@@ -92,7 +89,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         };
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<JsonByteBuffer> GetValue(JsonByteBuffer input, string name)
     {
         var reader = new Utf8JsonReader(input, true, default);
@@ -119,7 +115,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #endregion
 
     #region Enumerables
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public JsonByteBuffer CreateEmptyList()
     {
         var writer = new ArrayBufferWriter<byte>();
@@ -127,13 +122,10 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(writer);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<JsonByteBuffer> AddToList(JsonByteBuffer list, JsonByteBuffer element)
     {
         if (list.Writer == null)
-            return DataResult<JsonByteBuffer>.Fail(
-                "Could not append value: list was read-only or finalized"
-            );
+            return DataResult<JsonByteBuffer>.Fail(ImmutableList);
 
         var writer = list.Writer;
 
@@ -145,7 +137,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<JsonByteBuffer>.Success(list); // we return a new struct, but it points to the same memory region as the other one.
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<Unit> ReadList<TState, TCon>(
         JsonByteBuffer input,
         ref TState state,
@@ -174,7 +165,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #endregion
 
     #region Maps
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public JsonByteBuffer CreateEmptyMap()
     {
         var writer = new ArrayBufferWriter<byte>();
@@ -182,7 +172,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(writer);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<JsonByteBuffer> AddToMap(
         JsonByteBuffer map,
         JsonByteBuffer key,
@@ -190,9 +179,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     )
     {
         if (map.Writer == null)
-            return DataResult<JsonByteBuffer>.Fail(
-                "Could not append to map: map was read-only or finalized."
-            );
+            return DataResult<JsonByteBuffer>.Fail(ImmutableMap);
 
         var writer = map.Writer;
         if (writer.WrittenSpan[^1] != (byte)'{')
@@ -205,7 +192,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<JsonByteBuffer>.Success(map);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public DataResult<Unit> ReadMap<TState, TCon>(
         JsonByteBuffer input,
         ref TState state,
@@ -248,7 +234,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #endregion
 
     #region Utils
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public JsonByteBuffer AppendToPrefix(JsonByteBuffer prefix, JsonByteBuffer value)
     {
         var finalizedValue = value;
@@ -280,10 +265,8 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return finalizedValue;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public JsonByteBuffer RemoveFromInput(JsonByteBuffer input, string valueKey) => input; // mutating the input while decoding is useless since our lookups are by-key
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static bool IsEmptyJson(in JsonByteBuffer buffer)
     {
         if (buffer.IsEmpty)
@@ -299,19 +282,16 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return false;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsJsonArray(in JsonByteBuffer buffer)
     {
         return buffer.Memory.Span[0] == (byte)'[' && buffer.Memory.Span[^1] == (byte)']';
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsJsonObject(in JsonByteBuffer buffer)
     {
         return buffer.Memory.Span[0] == (byte)'{' && buffer.Memory.Span[^1] == (byte)'}';
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private JsonByteBuffer MergeArrays(in JsonByteBuffer left, in JsonByteBuffer right)
     {
         if (IsEmptyJson(in left))
@@ -336,7 +316,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(merged);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private JsonByteBuffer MergeObjects(in JsonByteBuffer left, in JsonByteBuffer right)
     {
         if (IsEmptyJson(in left))
