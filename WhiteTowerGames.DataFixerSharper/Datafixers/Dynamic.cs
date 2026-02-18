@@ -53,6 +53,29 @@ public readonly struct Dynamic<TFormat>
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
+    public DataResult<Dynamic<TFormat>> Remove(string targetKey)
+    {
+        var state = new MapTransformState
+        {
+            Map = Ops.CreateEmptyMap(),
+            KeyFound = false,
+            ErrorState = DataResult<Unit>.Success(default),
+        };
+
+        var consumer = new MapKeyRemover(Ops, targetKey);
+        var readResult = Ops.ReadMap(Value, ref state, consumer);
+
+        if (readResult.IsError)
+            return DataResult<Dynamic<TFormat>>.Fail(readResult.ErrorMessage);
+        if (state.IsError)
+            return DataResult<Dynamic<TFormat>>.Fail(state.ErrorMessage);
+        if (!state.KeyFound)
+            return DataResult<Dynamic<TFormat>>.Success(this);
+
+        return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
+    }
+
+    #region Utility Structs
     private readonly struct MapTransformer : IMapConsumer<MapTransformState, TFormat>
     {
         public readonly IDynamicOps<TFormat> Ops;
@@ -92,6 +115,43 @@ public readonly struct Dynamic<TFormat>
         }
     }
 
+    private readonly struct MapKeyRemover : IMapConsumer<MapTransformState, TFormat>
+    {
+        public readonly IDynamicOps<TFormat> Ops;
+        public readonly string TargetKey;
+
+        public MapKeyRemover(IDynamicOps<TFormat> ops, string targetKey)
+        {
+            Ops = ops;
+            TargetKey = targetKey;
+        }
+
+        public void Accept(ref MapTransformState map, TFormat key, TFormat value)
+        {
+            if (map.IsError)
+                return;
+
+            var keyStrResult = Ops.GetString(key);
+            if (keyStrResult.IsError)
+            {
+                map.ErrorState = DataResult<Unit>.Fail(keyStrResult.ErrorMessage);
+                return;
+            }
+
+            if (keyStrResult.GetOrThrow() == TargetKey)
+            {
+                map.KeyFound = true;
+                return;
+            }
+
+            var addResult = Ops.AddToMap(map.Map, key, value);
+            if (addResult.IsError)
+                map.ErrorState = DataResult<Unit>.Fail(addResult.ErrorMessage);
+            else
+                map.Map = addResult.GetOrThrow();
+        }
+    }
+
     private ref struct MapTransformState
     {
         public TFormat Map;
@@ -101,4 +161,5 @@ public readonly struct Dynamic<TFormat>
         public bool IsError => ErrorState.IsError;
         public string ErrorMessage => ErrorState.ErrorMessage;
     }
+    #endregion
 }
