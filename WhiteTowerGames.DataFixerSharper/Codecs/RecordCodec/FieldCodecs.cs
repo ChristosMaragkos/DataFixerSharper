@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
@@ -24,14 +25,15 @@ public interface IFieldCodec<T, TField>
         where TOps : IDynamicOps<TFormat>;
     DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>;
+
+    internal static readonly ConcurrentDictionary<(Type, string), object> KeyCache = new();
 }
 
-public class FieldCodec<T, TField> : IFieldCodec<T, TField>
+public readonly struct FieldCodec<T, TField> : IFieldCodec<T, TField>
 {
     private readonly ICodec<TField> _codec;
     private readonly string _name;
     private readonly Func<T, TField> _getter;
-    private readonly Dictionary<Type, object> _keyCache = new();
 
     public FieldCodec(ICodec<TField> codec, string name, Func<T, TField> getter)
     {
@@ -64,7 +66,10 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
         if (encodedValue.IsError)
             return encodedValue;
 
-        var key = _keyCache.TryGetValue(typeof(TFormat), out var cached)
+        var key = IFieldCodec<T, TField>.KeyCache.TryGetValue(
+            (typeof(TFormat), _name),
+            out var cached
+        )
             ? (TFormat)cached
             : CacheKey<TOps, TFormat>(ops);
         return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
@@ -74,18 +79,17 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
         where TOps : IDynamicOps<TFormat>
     {
         var converted = ops.CreateString(_name)!;
-        _keyCache[typeof(TFormat)] = converted;
+        IFieldCodec<T, TField>.KeyCache[(typeof(TFormat), _name)] = converted;
         return converted;
     }
 }
 
-public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
+public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
 {
     private readonly ICodec<TField> _codec;
     private readonly string _name;
     private readonly Func<T, TField> _getter;
     private readonly TField _defaultValue;
-    private readonly Dictionary<Type, object> _keyCache = new();
 
     public OptionalFieldCodec(
         ICodec<TField> codec,
@@ -127,7 +131,10 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         if (encodedValue.IsError)
             return encodedValue;
 
-        var key = _keyCache.TryGetValue(typeof(TFormat), out var cached)
+        var key = IFieldCodec<T, TField>.KeyCache.TryGetValue(
+            (typeof(TFormat), _name),
+            out var cached
+        )
             ? (TFormat)cached
             : CacheKey<TOps, TFormat>(ops);
         return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
@@ -137,7 +144,7 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         where TOps : IDynamicOps<TFormat>
     {
         var converted = ops.CreateString(_name)!;
-        _keyCache[typeof(TFormat)] = converted;
+        IFieldCodec<T, TField>.KeyCache[(typeof(TFormat), _name)] = converted;
         return converted;
     }
 }
