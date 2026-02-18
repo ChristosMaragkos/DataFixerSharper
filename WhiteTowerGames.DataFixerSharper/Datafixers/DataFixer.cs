@@ -4,7 +4,9 @@ namespace WhiteTowerGames.DataFixerSharper.Datafixers;
 
 public static class DataFixer
 {
-    public static readonly SortedDictionary<Version, List<IDataFix>> DataFixes = new();
+    private static readonly SortedDictionary<Version, List<IDataFix>> DataFixes = new();
+
+    public static void RegisterDatafix(IDataFix fix) => DataFixes[fix.Since].Add(fix);
 
     public static DataResult<TFormat> Migrate<TOps, TFormat>(
         Version fromVersion,
