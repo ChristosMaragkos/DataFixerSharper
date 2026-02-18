@@ -1,4 +1,5 @@
 **/obj
 **/bin
 
-Benchmarks/BenchmarkDotNet.Artifacts/*
+Benchmarks/BenchmarkDotNet.Artifacts/
+BenchmarkDotNet.Artifacts/
