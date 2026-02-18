@@ -38,12 +38,9 @@ public readonly struct DataResult<T>
 
     public DataResult<TOther> UnsafeMap<TOther>(Func<T, DataResult<TOther>> mapper)
     {
-        var mapped = mapper(_value);
         if (IsError)
             return DataResult<TOther>.Fail(_errorMessage);
-        else if (mapped.IsError)
-            return mapped;
 
-        return DataResult<TOther>.Success(mapped.GetOrThrow());
+        return mapper(_value);
     }
 }
