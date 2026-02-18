@@ -42,7 +42,7 @@ public readonly struct DataResult<T>
         if (IsError)
             return DataResult<TOther>.Fail(_errorMessage);
         else if (mapped.IsError)
-            return DataResult<TOther>.Fail(mapped.ErrorMessage);
+            return mapped;
 
         return DataResult<TOther>.Success(mapped.GetOrThrow());
     }
