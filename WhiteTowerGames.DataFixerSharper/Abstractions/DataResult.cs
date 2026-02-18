@@ -10,7 +10,7 @@ public readonly struct DataResult<T>
 
     public T GetOrThrow() => !_isError ? _value : throw new InvalidOperationException(ErrorMessage);
 
-    public T ResultOrPartial() => GetOrThrow();
+    public T GetOrElse(T defaultValue) => !_isError ? _value : defaultValue;
 
     public readonly string ErrorMessage =>
         _isError
@@ -38,12 +38,9 @@ public readonly struct DataResult<T>
 
     public DataResult<TOther> UnsafeMap<TOther>(Func<T, DataResult<TOther>> mapper)
     {
-        var mapped = mapper(_value);
         if (IsError)
             return DataResult<TOther>.Fail(_errorMessage);
-        else if (mapped.IsError)
-            return DataResult<TOther>.Fail(mapped.ErrorMessage);
 
-        return DataResult<TOther>.Success(mapped.GetOrThrow());
+        return mapper(_value);
     }
 }

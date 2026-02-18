@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs.RecordCodec;
@@ -24,9 +25,11 @@ public interface IFieldCodec<T, TField>
         where TOps : IDynamicOps<TFormat>;
     DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>;
+
+    internal static readonly ConcurrentDictionary<(Type, string), object> KeyCache = new();
 }
 
-public class FieldCodec<T, TField> : IFieldCodec<T, TField>
+public readonly struct FieldCodec<T, TField> : IFieldCodec<T, TField>
 {
     private readonly ICodec<TField> _codec;
     private readonly string _name;
@@ -63,12 +66,25 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
         if (encodedValue.IsError)
             return encodedValue;
 
-        var key = ops.CreateString(_name);
+        var key = IFieldCodec<T, TField>.KeyCache.TryGetValue(
+            (typeof(TFormat), _name),
+            out var cached
+        )
+            ? (TFormat)cached
+            : CacheKey<TOps, TFormat>(ops);
         return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+    }
+
+    private TFormat CacheKey<TOps, TFormat>(TOps ops)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var converted = ops.CreateString(_name)!;
+        IFieldCodec<T, TField>.KeyCache[(typeof(TFormat), _name)] = converted;
+        return converted;
     }
 }
 
-public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
+public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
 {
     private readonly ICodec<TField> _codec;
     private readonly string _name;
@@ -115,7 +131,20 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         if (encodedValue.IsError)
             return encodedValue;
 
-        var key = ops.CreateString(_name);
+        var key = IFieldCodec<T, TField>.KeyCache.TryGetValue(
+            (typeof(TFormat), _name),
+            out var cached
+        )
+            ? (TFormat)cached
+            : CacheKey<TOps, TFormat>(ops);
         return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+    }
+
+    private TFormat CacheKey<TOps, TFormat>(TOps ops)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var converted = ops.CreateString(_name)!;
+        IFieldCodec<T, TField>.KeyCache[(typeof(TFormat), _name)] = converted;
+        return converted;
     }
 }

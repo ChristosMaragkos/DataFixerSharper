@@ -67,6 +67,12 @@ public class CodecBenchmarks
     }
 
     [Benchmark]
+    public void Codec_Serialize_IntArray()
+    {
+        IntegerArrayCodec.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, Integers).GetOrThrow();
+    }
+
+    [Benchmark]
     public void Codec_Deserialize()
     {
         PersonCodec.Parse<JsonOps, JsonByteBuffer>(JsonOps, MemoryPerson);
@@ -75,12 +81,6 @@ public class CodecBenchmarks
     private static readonly JsonByteBuffer MemoryPerson = new JsonByteBuffer(
         Encoding.UTF8.GetBytes("""{"Name":"John","Age":10}""")
     );
-
-    [Benchmark]
-    public void Codec_Serialize_IntArray()
-    {
-        IntegerArrayCodec.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, Integers).GetOrThrow();
-    }
 
     private static readonly JsonByteBuffer MemoryIntegers = new JsonByteBuffer(
         Encoding.UTF8.GetBytes("[1,2,3]")

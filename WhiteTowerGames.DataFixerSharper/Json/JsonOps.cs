@@ -20,6 +20,13 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     private static readonly JsonByteBuffer TrueValue = "true"u8.ToArray();
     private static readonly JsonByteBuffer FalseValue = "false"u8.ToArray();
 
+    private static readonly JsonByteBuffer ArrayOpen = "["u8.ToArray();
+    private static readonly JsonByteBuffer ArrayClose = "]"u8.ToArray();
+    private static readonly JsonByteBuffer ObjectOpen = "{"u8.ToArray();
+    private static readonly JsonByteBuffer ObjectClose = "}"u8.ToArray();
+    private static readonly JsonByteBuffer Comma = ","u8.ToArray();
+    private static readonly JsonByteBuffer Colon = ":"u8.ToArray();
+
     private const string NumNotFound = "Could not fetch numeric value - the value was not found";
     private const string BoolNotFound = "Could not fetch boolean value - the value was not found";
     private const string StringNotFound = "Could not fetch string value - the value was not found";
@@ -118,7 +125,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     public JsonByteBuffer CreateEmptyList()
     {
         var writer = new ArrayBufferWriter<byte>();
-        writer.Write("["u8);
+        writer.Write(ArrayOpen);
         return new JsonByteBuffer(writer);
     }
 
@@ -130,7 +137,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         var writer = list.Writer;
 
         if (writer.WrittenSpan[^1] != (byte)'[') // if the last written byte was the opening bracket (i.e. the list is empty), no need for a comma
-            writer.Write(","u8);
+            writer.Write(Comma);
 
         writer.Write(element);
 
@@ -168,7 +175,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     public JsonByteBuffer CreateEmptyMap()
     {
         var writer = new ArrayBufferWriter<byte>();
-        writer.Write("{"u8);
+        writer.Write(ObjectOpen);
         return new JsonByteBuffer(writer);
     }
 
@@ -183,10 +190,10 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
         var writer = map.Writer;
         if (writer.WrittenSpan[^1] != (byte)'{')
-            writer.Write(","u8);
+            writer.Write(Comma);
 
         writer.Write(key);
-        writer.Write(":"u8);
+        writer.Write(Colon);
         writer.Write(value);
 
         return DataResult<JsonByteBuffer>.Success(map);
@@ -243,9 +250,9 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
             var writer = value.Writer;
 
             if (writer.WrittenSpan[0] == (byte)'[')
-                writer.Write("]"u8);
+                writer.Write(ArrayClose);
             else if (writer.WrittenSpan[0] == (byte)'{')
-                writer.Write("}"u8);
+                writer.Write(ObjectClose);
 
             finalizedValue = new JsonByteBuffer(writer.WrittenMemory);
         }
