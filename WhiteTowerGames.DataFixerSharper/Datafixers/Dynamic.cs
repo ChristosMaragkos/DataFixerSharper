@@ -13,7 +13,7 @@ public readonly struct Dynamic<TFormat>
         Value = value;
     }
 
-    public DataResult<Dynamic<TFormat>> Get(string key)
+    public DynamicResult<TFormat> Get(string key)
     {
         var result = Ops.GetValue(Value, key);
         if (result.IsError)
@@ -22,7 +22,7 @@ public readonly struct Dynamic<TFormat>
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, result.GetOrThrow()));
     }
 
-    public DataResult<Dynamic<TFormat>> Set(string targetKey, Dynamic<TFormat> newValue)
+    public DynamicResult<TFormat> Set(string targetKey, Dynamic<TFormat> newValue)
     {
         var state = new MapTransformState
         {
@@ -53,7 +53,7 @@ public readonly struct Dynamic<TFormat>
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
-    public DataResult<Dynamic<TFormat>> Remove(string targetKey)
+    public DynamicResult<TFormat> Remove(string targetKey)
     {
         var state = new MapTransformState
         {
