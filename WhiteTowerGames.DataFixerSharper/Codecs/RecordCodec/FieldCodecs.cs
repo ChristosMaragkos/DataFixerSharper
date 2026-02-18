@@ -31,6 +31,7 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
     private readonly ICodec<TField> _codec;
     private readonly string _name;
     private readonly Func<T, TField> _getter;
+    private readonly Dictionary<Type, object> _keyCache = new();
 
     public FieldCodec(ICodec<TField> codec, string name, Func<T, TField> getter)
     {
@@ -63,8 +64,18 @@ public class FieldCodec<T, TField> : IFieldCodec<T, TField>
         if (encodedValue.IsError)
             return encodedValue;
 
-        var key = ops.CreateString(_name);
+        var key = _keyCache.TryGetValue(typeof(TFormat), out var cached)
+            ? (TFormat)cached
+            : CacheKey<TOps, TFormat>(ops);
         return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+    }
+
+    private TFormat CacheKey<TOps, TFormat>(TOps ops)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var converted = ops.CreateString(_name)!;
+        _keyCache[typeof(TFormat)] = converted;
+        return converted;
     }
 }
 
@@ -74,6 +85,7 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
     private readonly string _name;
     private readonly Func<T, TField> _getter;
     private readonly TField _defaultValue;
+    private readonly Dictionary<Type, object> _keyCache = new();
 
     public OptionalFieldCodec(
         ICodec<TField> codec,
@@ -115,7 +127,17 @@ public class OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         if (encodedValue.IsError)
             return encodedValue;
 
-        var key = ops.CreateString(_name);
+        var key = _keyCache.TryGetValue(typeof(TFormat), out var cached)
+            ? (TFormat)cached
+            : CacheKey<TOps, TFormat>(ops);
         return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+    }
+
+    private TFormat CacheKey<TOps, TFormat>(TOps ops)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var converted = ops.CreateString(_name)!;
+        _keyCache[typeof(TFormat)] = converted;
+        return converted;
     }
 }
