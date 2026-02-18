@@ -10,6 +10,8 @@ public readonly struct DataResult<T>
 
     public T GetOrThrow() => !_isError ? _value : throw new InvalidOperationException(ErrorMessage);
 
+    public T GetOrElse(T defaultValue) => !_isError ? _value : defaultValue;
+
     public readonly string ErrorMessage =>
         _isError
             ? $"DataResult[{typeof(T)}] Fail: {_errorMessage}"
