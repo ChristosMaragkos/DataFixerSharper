@@ -22,6 +22,7 @@ public interface IDynamicOps<TFormat>
     DataResult<Unit> ReadList<TState, TCon>(TFormat input, ref TState state, TCon consumer)
         where TState : allows ref struct
         where TCon : ICollectionConsumer<TState, TFormat>;
+    TFormat FinalizeList(TFormat list);
     #endregion
 
     #region Maps
@@ -30,11 +31,13 @@ public interface IDynamicOps<TFormat>
     DataResult<Unit> ReadMap<TState, TCon>(TFormat input, ref TState state, TCon consumer)
         where TState : allows ref struct
         where TCon : IMapConsumer<TState, TFormat>;
+    TFormat FinalizeMap(TFormat map);
     #endregion
 
     #region Utils
     TFormat AppendToPrefix(TFormat prefix, TFormat value);
     TFormat RemoveFromInput(TFormat input, string valueKey);
+    // DataResult<TFormat> Parse(ReadOnlySpan<byte> bytes);
     #endregion
 }
 

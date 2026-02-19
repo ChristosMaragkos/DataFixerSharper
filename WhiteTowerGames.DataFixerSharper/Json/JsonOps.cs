@@ -169,6 +169,14 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<Unit>.Success(default);
     }
 
+    public JsonByteBuffer FinalizeList(JsonByteBuffer list)
+    {
+        if (list.Writer == null)
+            return list;
+
+        list.Writer.Write(ArrayClose);
+        return new JsonByteBuffer(list.Writer.WrittenMemory);
+    }
     #endregion
 
     #region Maps
@@ -212,7 +220,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         if (!reader.Read() && reader.TokenType != JsonTokenType.StartObject)
             return DataResult<Unit>.Fail($"Expected a JSON object, instead got {reader.TokenType}");
 
-        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        while (reader.Read() || reader.TokenType != JsonTokenType.EndObject)
         {
             if (reader.TokenType != JsonTokenType.PropertyName)
             {
@@ -220,23 +228,27 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
                 continue;
             }
 
-            var keyStart = (int)reader.TokenStartIndex;
-            reader.Read();
+            var keyString = reader.GetString()!;
+            var keyBuffer = CreateString(keyString);
 
+            reader.Read();
             var valStart = (int)reader.TokenStartIndex;
             reader.Skip();
             var valLength = (int)reader.BytesConsumed - valStart;
 
-            var keyLength = (int)reader.BytesConsumed - keyStart - valLength;
-
-            consumer.Accept(
-                ref state,
-                input.Memory.Slice(keyStart, keyLength),
-                input.Memory.Slice(valStart, valLength)
-            );
+            consumer.Accept(ref state, keyBuffer, input.Memory.Slice(valStart, valLength));
         }
 
         return DataResult<Unit>.Success(default);
+    }
+
+    public JsonByteBuffer FinalizeMap(JsonByteBuffer map)
+    {
+        if (map.Writer == null)
+            return map;
+
+        map.Writer.Write(ObjectClose);
+        return new JsonByteBuffer(map.Writer.WrittenMemory);
     }
     #endregion
 
