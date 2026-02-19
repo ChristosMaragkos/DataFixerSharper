@@ -50,6 +50,7 @@ public readonly struct Dynamic<TFormat>
             state.Map = addResult.GetOrThrow();
         }
 
+        state.Map = Ops.FinalizeMap(state.Map);
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
@@ -72,6 +73,7 @@ public readonly struct Dynamic<TFormat>
         if (!state.KeyFound)
             return DataResult<Dynamic<TFormat>>.Success(this);
 
+        state.Map = Ops.FinalizeMap(state.Map);
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
