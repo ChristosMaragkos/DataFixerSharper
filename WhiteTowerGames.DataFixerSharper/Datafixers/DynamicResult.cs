@@ -49,8 +49,10 @@ public readonly struct DynamicResult<TFormat>
     public DynamicResult<TFormat> Map(Func<Dynamic<TFormat>, DynamicResult<TFormat>> mapper) =>
         _result.Map(mapper).GetOrElse(this);
 
-    public Dynamic<TFormat> GetOrElse(Dynamic<TFormat> defaultValue) =>
-        !IsError ? Data : defaultValue;
+    public DataResult<Dynamic<TFormat>> GetOrElse(Dynamic<TFormat> defaultValue) =>
+        !IsError
+            ? DataResult<Dynamic<TFormat>>.Success(Data)
+            : DataResult<Dynamic<TFormat>>.Success(defaultValue);
 
     public Dynamic<TFormat> GetOrThrow() =>
         !IsError ? Data : throw new InvalidOperationException(ErrorMessage);
