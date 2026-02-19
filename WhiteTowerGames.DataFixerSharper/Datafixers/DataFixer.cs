@@ -6,7 +6,11 @@ public static class DataFixer
 {
     private static readonly SortedDictionary<Version, List<IDataFix>> DataFixes = new();
 
-    public static void RegisterDatafix(IDataFix fix) => DataFixes[fix.Since].Add(fix);
+    public static void RegisterDatafix(IDataFix fix)
+    {
+        DataFixes.TryAdd(fix.Since, new());
+        DataFixes[fix.Since].Add(fix);
+    }
 
     public static DataResult<TFormat> Migrate<TOps, TFormat>(
         Version fromVersion,
@@ -22,7 +26,7 @@ public static class DataFixer
             if (version < fromVersion)
                 continue;
 
-            if (version >= toVersion)
+            if (version > toVersion)
                 break;
 
             foreach (var fix in fixes)
