@@ -7,10 +7,10 @@ DataFixerSharper is a C# reimplementation of Mojang's [DataFixerUpper](https://w
 Serialization layer. What does that mean? It means you can create `Codec`s for simple classes and combine them like Lego bricks to build more complex `Codec`s.
 
 There is a multitude of Codec types that range from simple to slightly less so, but the concept is relatively easy to grasp, especially if you've made Minecraft Java mods before.
-The main class is the `Codec<T>`, which is a combination of `IEncoder<T>` and `IDecoder<T>`. A codec knows how to leverage data in order to serialize to and from specific formats, like JSON.
+The main entrypoint is the `ICodec<T>`. A codec knows how to leverage data in order to serialize to and from specific formats, like JSON.
 There are built-in codecs for most primitive types, found in `BuiltinCodecs`, which can be used to incrementally create codecs for more complex classes by combining them and applying transformations on them.
 For example, you can:
-- Create a `Codec<IEnumerable<T>>` out of any `Codec<T>` with any of the relevant methods (`Codec.ForEnumerable`,`Codec.ForList`, etc.)
+- Create an `ICodec<IEnumerable<T>>` out of any `ICodec<T>` with any of the relevant methods (`ICodec.ForArray`,`ICodec.ForList`, etc.)
 - Create codecs by safely mapping between mutually convertible types such as a `Vector3` and a `float[]` with automatic runtime validation using `SafeMap` and its friends (which map 1-1 with DFU's `xmap` and `flatmap`).
 - Serialize and deserialize enum values and bitfields either to integers or string arrays.
 
@@ -19,7 +19,7 @@ and codecs do not hold any reference to the format they operate with - you can i
 
 ---
 ## Codec Types
-A few implementations of `Codec` allow you to seamlessly serialize even complex classes.
+A few implementations of `ICodec` allow you to seamlessly serialize even complex classes.
 
 For example, `RecordCodecBuilder` is likely to be your best friend as it lets you map fields to getters and constructor parameters, and having the Codec resolve them for you.
 
@@ -84,5 +84,43 @@ private static readonly Codec<Circle> CircleCodec = RecordCodecBuilder.Create<Ci
     }
 ```
 
-## Coming Soon
-Coming soon to DataFixerSharper is the `DataFix` part of DFU. You will be able to apply transformations on data between versions in order to migrate old data to newer formats.
+## `DataFix`es
+DataFixerSharper has a form of data transformation rules you can use to migrate data between versions seamlessly: you can define a rule (a class that implements `IDataFix`)
+and define how it manipulates data, and from which version. For example, say we have this JSON from version 1.0.0:
+```json
+{
+  "Id": "player_1",
+  "Speed": 15
+}
+```
+Let's say that, in version 2.0.0, we renamed "Speed" to "Agility".
+We can define a datafix class for this, like so:
+```csharp
+public class RenameSpeedToAgility : IDataFix
+{
+    public Version Since { get; init; } = new Version(2,0,0);
+    public DataResult<Dynamic<TFormat>> Apply<TFormat>(Dynamic<TFormat> input)
+    {
+        return input.Get("Speed") // get the value for speed
+            .Map(speed => input.Remove("Speed").Set("Agility", speed)) // replace "Speed" with "Agility" and the same value
+            .GetOrElse(input); // if we replaced the value, return the new data. Otherwise, return the old data.
+    }
+}
+```
+To use our rule, we must first register it with the DataFixer class:
+```csharp
+DataFixer.RegisterDataFix(new RenameSpeedToAgility());
+ ``` 
+
+And, all we need to do in order to migrate our piece of data is call `DataFixer.Migrate`, like so:
+```csharp
+// Assuming we already have this outdated JSON in the format JsonOps expects (JsonByteBuffer):
+// {
+//  "Speed" : 15,
+//  "Name" : "John"
+//}
+
+var migratedResult = DataFixer.Migrate(fromVersion: v1, toVersion: v2, oldJson); // returns a DataResult containing our converted JSON, or an error
+var migrated = migratedResult.GetOrThrow();
+Console.WriteLine(migrated.ToJsonString()); // Will output "{"Name":"John","Agility":15}"
+```
