@@ -4,6 +4,7 @@ DataFixerSharper is a C# reimplementation of Mojang's [DataFixerUpper](https://w
 - Format-agnostic
 - Bidirectional
 - Composable
+
 Serialization layer. What does that mean? It means you can create `Codec`s for simple classes and combine them like Lego bricks to build more complex `Codec`s.
 
 There is a multitude of Codec types that range from simple to slightly less so, but the concept is relatively easy to grasp, especially if you've made Minecraft Java mods before.
