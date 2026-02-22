@@ -22,7 +22,7 @@ and codecs do not hold any reference to the format they operate with - you can i
 ## Codec Types
 A few implementations of `ICodec` allow you to seamlessly serialize even complex classes.
 
-For example, `RecordCodecBuilder` is likely to be your best friend as it lets you map fields to getters and constructor parameters, and having the Codec resolve them for you.
+For example, `RecordCodecBuilder` is likely to be your best friend as it lets you map fields to getters and constructor parameters, having the Codec resolve them for you.
 
 Syntax:
 ```csharp
