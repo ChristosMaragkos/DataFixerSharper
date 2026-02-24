@@ -154,6 +154,49 @@ public readonly struct Dynamic<TFormat>
         }
     }
 
+    private readonly struct MapKeyRenamer : IMapConsumer<MapTransformState, TFormat>
+    {
+        public readonly IDynamicOps<TFormat> Ops;
+        public readonly string OldKey;
+        public readonly string NewKey;
+
+        public MapKeyRenamer(IDynamicOps<TFormat> ops, string oldKey, string newKey)
+        {
+            Ops = ops;
+            OldKey = oldKey;
+            NewKey = newKey;
+        }
+
+        public void Accept(ref MapTransformState map, TFormat key, TFormat value)
+        {
+            if (map.IsError)
+                return;
+
+            var keyResult = Ops.GetString(key);
+            if (keyResult.IsError)
+            {
+                map.ErrorState = DataResult<Unit>.Fail(keyResult.ErrorMessage);
+                return;
+            }
+
+            var keyToAdd =
+                keyResult.GetOrThrow() == OldKey ? CreateNewKey(ref map, Ops, NewKey) : key;
+            var addResult = Ops.AddToMap(map.Map, keyToAdd, value);
+            if (addResult.IsError)
+                map.ErrorState = DataResult<Unit>.Fail(addResult.ErrorMessage);
+            else
+                map.Map = addResult.GetOrThrow();
+
+            return;
+
+            TFormat CreateNewKey(ref MapTransformState map, IDynamicOps<TFormat> ops, string newKey)
+            {
+                map.KeyFound = true;
+                return ops.CreateString(newKey);
+            }
+        }
+    }
+
     private ref struct MapTransformState
     {
         public TFormat Map;
