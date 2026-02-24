@@ -31,7 +31,7 @@ public readonly struct Dynamic<TFormat>
             ErrorState = DataResult<Unit>.Success(default),
         };
 
-        var consumer = new MapTransformer(Ops, targetKey, newValue.Value);
+        var consumer = new MapKeyAdder(Ops, targetKey, newValue.Value);
         var readResult = Ops.ReadMap(Value, ref state, consumer);
 
         if (readResult.IsError)
@@ -78,13 +78,13 @@ public readonly struct Dynamic<TFormat>
     }
 
     #region Utility Structs
-    private readonly struct MapTransformer : IMapConsumer<MapTransformState, TFormat>
+    private readonly struct MapKeyAdder : IMapConsumer<MapTransformState, TFormat>
     {
         public readonly IDynamicOps<TFormat> Ops;
         public readonly string TargetKey;
         public readonly TFormat NewValue;
 
-        public MapTransformer(IDynamicOps<TFormat> ops, string targetKey, TFormat newValue)
+        public MapKeyAdder(IDynamicOps<TFormat> ops, string targetKey, TFormat newValue)
         {
             Ops = ops;
             TargetKey = targetKey;
