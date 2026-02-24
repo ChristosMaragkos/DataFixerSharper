@@ -52,37 +52,35 @@ A great implementation for it can be found in the [unit tests](https://github.co
 
 ```csharp
 private static readonly Codec<Circle> CircleCodec = RecordCodecBuilder.Create<Circle>(
-        instance =>
-            instance
-                .WithFields(BuiltinCodecs.Float.Field((Circle circle) => circle.Radius, "radius"))
-                .WithCtor(radius => new Circle(radius))
-    );
+    instance => instance
+        .WithFields(BuiltinCodecs.Float.Field((Circle circle) => circle.Radius, "radius"))
+        .WithCtor(radius => new Circle(radius))
+);
 
-    private static readonly Codec<Rectangle> RectCodec = RecordCodecBuilder.Create<Rectangle>(
-        instance =>
-            instance
-                .WithFields(
-                    BuiltinCodecs.Float.Field((Rectangle rect) => rect.W, "width"),
-                    BuiltinCodecs.Float.Field((Rectangle rect) => rect.H, "height")
-                )
-                .WithCtor((width, height) => new Rectangle(width, height))
-    );
+private static readonly Codec<Rectangle> RectCodec = RecordCodecBuilder.Create<Rectangle>(
+    instance => instance
+        .WithFields(
+            BuiltinCodecs.Float.Field((Rectangle rect) => rect.W, "width"),
+            BuiltinCodecs.Float.Field((Rectangle rect) => rect.H, "height")
+        )
+        .WithCtor((width, height) => new Rectangle(width, height))
+);
 
-    private static readonly Codec<Shape> ShapeDispatch = Codec.Dispatch<Shape, string>(
+private static readonly Codec<Shape> ShapeDispatch = Codec.Dispatch<Shape, string>(
         BuiltinCodecs.String,
         shape => shape.ShapeType(),
         discr => CodecByType(discr)
-    );
+);
 
-    private static Codec<Shape> CodecByType(string discriminator)
+private static Codec<Shape> CodecByType(string discriminator)
+{
+    return discriminator switch
     {
-        return discriminator switch
-        {
-            "circle" => CircleCodec.Upcast<Circle, Shape>(), // We need to wrap the subtype codecs in Codec.Upcast. Because of how generics work in C#,
-            "rectangle" => RectCodec.Upcast<Rectangle, Shape>(), // a Codec<Circle> is not inherently a Codec<Shape>, and Upcast handles the mapping to and from the base class for us.
-            _ => throw new InvalidOperationException("Invalid type discriminator"),
-        };
-    }
+        "circle" => CircleCodec.Upcast<Circle, Shape>(), // We need to wrap the subtype codecs in Codec.Upcast. Because of how generics work in C#,
+        "rectangle" => RectCodec.Upcast<Rectangle, Shape>(), // a Codec<Circle> is not inherently a Codec<Shape>, and Upcast handles the mapping to and from the base class for us.
+        _ => throw new InvalidOperationException("Invalid type discriminator"),
+    };
+}
 ```
 
 ## `DataFix`es
