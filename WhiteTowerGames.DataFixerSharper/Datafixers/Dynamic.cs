@@ -77,6 +77,29 @@ public readonly struct Dynamic<TFormat>
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
+    public DynamicResult<TFormat> Rename(string oldKey, string newKey)
+    {
+        var state = new MapTransformState
+        {
+            Map = Ops.CreateEmptyMap(),
+            KeyFound = false,
+            ErrorState = DataResult<Unit>.Success(default),
+        };
+
+        var consumer = new MapKeyRenamer(Ops, oldKey, newKey);
+        var readResult = Ops.ReadMap(Value, ref state, consumer);
+
+        if (readResult.IsError)
+            return DataResult<Dynamic<TFormat>>.Fail(readResult.ErrorMessage);
+        if (state.IsError)
+            return DataResult<Dynamic<TFormat>>.Fail(state.ErrorMessage);
+        if (!state.KeyFound)
+            return DataResult<Dynamic<TFormat>>.Success(this); // no key found, no problem
+
+        state.Map = Ops.FinalizeMap(state.Map);
+        return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
+    }
+
     #region Utility Structs
     private readonly struct MapKeyAdder : IMapConsumer<MapTransformState, TFormat>
     {
@@ -180,7 +203,9 @@ public readonly struct Dynamic<TFormat>
             }
 
             var keyToAdd =
-                (keyResult.GetOrThrow() == OldKey && !map.KeyFound) ? CreateNewKey(ref map, Ops, NewKey) : key;
+                (keyResult.GetOrThrow() == OldKey && !map.KeyFound)
+                    ? CreateNewKey(ref map, Ops, NewKey)
+                    : key;
             var addResult = Ops.AddToMap(map.Map, keyToAdd, value);
             if (addResult.IsError)
                 map.ErrorState = DataResult<Unit>.Fail(addResult.ErrorMessage);
