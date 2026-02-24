@@ -180,7 +180,7 @@ public readonly struct Dynamic<TFormat>
             }
 
             var keyToAdd =
-                keyResult.GetOrThrow() == OldKey ? CreateNewKey(ref map, Ops, NewKey) : key;
+                (keyResult.GetOrThrow() == OldKey && !map.KeyFound) ? CreateNewKey(ref map, Ops, NewKey) : key;
             var addResult = Ops.AddToMap(map.Map, keyToAdd, value);
             if (addResult.IsError)
                 map.ErrorState = DataResult<Unit>.Fail(addResult.ErrorMessage);
