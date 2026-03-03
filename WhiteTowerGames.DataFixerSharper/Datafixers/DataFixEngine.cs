@@ -1,29 +1,45 @@
 using WhiteTowerGames.DataFixerSharper.Abstractions;
+using WhiteTowerGames.DataFixerSharper.Versioning;
 
 namespace WhiteTowerGames.DataFixerSharper.Datafixers;
 
 public sealed class DataFixEngine<TFormat>
 {
     private readonly IDynamicOps<TFormat> _ops;
-    private readonly SortedDictionary<Version, List<IDataFix<TFormat>>> _fixes = new();
+    private readonly Dictionary<
+        Type,
+        SortedDictionary<Version, List<IDataFix<TFormat>>>
+    > _timelines = new();
 
     public DataFixEngine(IDynamicOps<TFormat> ops)
     {
         _ops = ops;
     }
 
-    public void RegisterDatafix(IDataFix<TFormat> fix)
+    public void RegisterTimeline<TObj>(Timeline<TObj, TFormat> timeline)
     {
-        if (!_fixes.ContainsKey(fix.Since))
-            _fixes[fix.Since] = new List<IDataFix<TFormat>>();
+        var objectType = typeof(TObj);
 
-        _fixes[fix.Since].Add(fix);
+        if (!_timelines.ContainsKey(objectType))
+            _timelines[objectType] = new();
+
+        foreach (var fix in timeline.Fixes)
+        {
+            if (!_timelines[objectType].ContainsKey(fix.Since))
+                _timelines[objectType][fix.Since] = new();
+
+            _timelines[objectType][fix.Since].Add(fix);
+        }
     }
 
-    public DataResult<TFormat> Migrate(Version fromVersion, Version toVersion, TFormat data)
+    public DataResult<TFormat> Migrate<TObj>(Version fromVersion, Version toVersion, TFormat data)
     {
+        var objectType = typeof(TObj);
+        if (!_timelines.TryGetValue(objectType, out var typeFixes))
+            return DataResult<TFormat>.Success(data);
+
         var migrating = new Dynamic<TFormat>(_ops, data);
-        foreach (var (version, fixes) in _fixes)
+        foreach (var (version, fixes) in typeFixes)
         {
             if (version < fromVersion)
                 continue;
