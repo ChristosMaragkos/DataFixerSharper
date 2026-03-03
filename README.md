@@ -84,42 +84,66 @@ private static Codec<Shape> CodecByType(string discriminator)
 ```
 
 ## `DataFix`es
-DataFixerSharper has a form of data transformation rules you can use to migrate data between versions seamlessly: you can define a rule (a class that implements `IDataFix`)
-and define how it manipulates data, and from which version. For example, say we have this JSON from version 1.0.0:
-```json
-{
-  "Id": "player_1",
-  "Speed": 15
-}
-```
-Let's say that, in version 2.0.0, we renamed "Speed" to "Agility".
-We can define a datafix class for this, like so:
-```csharp
-public class RenameSpeedToAgility : IDataFix
-{
-    public Version Since { get; init; } = new Version(2,0,0);
-    public DataResult<Dynamic<TFormat>> Apply<TFormat>(Dynamic<TFormat> input)
-    {
-        return input.Get("Speed") // get the value for speed
-            .Map(speed => input.Remove("Speed").Set("Agility", speed)) // replace "Speed" with "Agility" and the same value
-            .GetOrElse(input); // if we replaced the value, return the new data. Otherwise, return the old data.
-    }
-}
-```
-To use our rule, we must first register it with the DataFixer class:
-```csharp
-DataFixer.RegisterDataFix(new RenameSpeedToAgility());
- ``` 
+Games and applications evolve, and data structures change. DataFixerSharper includes a powerful, schema-driven Data Migration Engine that allows you to cleanly define how your data changes across versions without writing messy, error-prone manual JSON manipulation.
 
-And, all we need to do in order to migrate our piece of data is call `DataFixer.Migrate`, like so:
-```csharp
-// Assuming we already have this outdated JSON in the format JsonOps expects (JsonByteBuffer):
-// {
-//  "Speed" : 15,
-//  "Name" : "John"
-//}
+Instead of writing manual rules, you may define a Timeline for your domain objects using a fluent builder. The engine will automatically walk the data tree and apply your migrations sequentially.
 
-var migratedResult = DataFixer.Migrate(fromVersion: v1, toVersion: v2, oldJson); // returns a DataResult containing our converted JSON, or an error
-var migrated = migratedResult.GetOrThrow();
-Console.WriteLine(migrated.ToJsonString()); // Will output "{"Name":"John","Agility":15}"
+### 1. Defining a Timeline
+
+```csharp
+// let's assume we have a simple "Player" class
+public static readonly Timeline<Player, JsonByteBuffer> PlayerTimeline = TimelineBuilder<JsonByteBuffer>.Create()
+    // The starting blueprint (v1.0.0)
+    .BaseSchema(new Dictionary<string, ISchemaType> {
+        { "hp", BuiltInSchemas.Int32 },
+        { "name", BuiltInSchemas.String }
+    })
+    // What changed in v1.1.0?
+    .SinceVersion(new Version(1, 1, 0))
+        .FieldRenamed("hp", "health")
+        .FieldAdded("mana", BuiltInSchemas.Int32, 10m) // Default value for old saves
+        .EndVersion()
+    // What changed in v1.2.0?
+    .SinceVersion(new Version(1, 2, 0))
+        .FieldRemoved("name") 
+        .CustomRule(dyn => 
+        {
+            // Apply custom math safely on the fly!
+            var healthDyn = dyn.Get("health");
+            if (healthDyn.IsError) return dyn;
+ 
+            var healthVal = JsonOps.GetNumber(healthDyn.GetOrThrow().Value).GetOrThrow();
+            var newHealthFormat = JsonOps.CreateNumeric(healthVal * 2);
+
+            return dyn.Set("health", new Dynamic<JsonByteBuffer>(JsonOps, newHealthFormat));
+        })
+        .EndVersion()
+    .Build<Player>();
+```
+
+### 2. The DataFix Engine
+
+To actually execute these migrations, you use the DataFixEngine. This acts as a central router for your entire application. You register all your timelines into it during startup, and it safely routes your data to the correct migration pipeline based on the type you request.
+
+```csharp
+// 1. Create your centralized engine (maybe even as a Singleton in DI?)
+var engine = new DataFixEngine<JsonByteBuffer>(JsonOps.Instance);
+
+// 2. Register your timelines (Cartridges into the Console)
+engine.RegisterTimeline(PlayerTimeline);
+engine.RegisterTimeline(InventoryTimeline); // Completely isolated from Player rules!
+
+// 3. Migrate outdated data dynamically!
+// E.g., The user loads a save file from v1.0.0, but the game is currently v1.2.0
+var result = engine.Migrate<Player>(
+    fromVersion: new Version(1, 0, 0), 
+    toVersion: new Version(1, 2, 0), 
+    oldJsonData
+);
+
+if (!result.IsError)
+{
+    var modernData = result.GetOrThrow();
+    // modernData is now guaranteed to be v1.2.0 compliant!
+}
 ```
