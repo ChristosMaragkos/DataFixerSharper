@@ -8,4 +8,6 @@ public sealed class PrimitiveSchema : ISchemaType
         DynamicResult<TFormat> data,
         Func<Dynamic<TFormat>, DynamicResult<TFormat>> transformer
     ) => data.Map(transformer);
+
+    internal PrimitiveSchema() { }
 }
