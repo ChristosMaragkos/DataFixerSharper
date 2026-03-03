@@ -121,6 +121,30 @@ public readonly struct Dynamic<TFormat>
         state.List = Ops.FinalizeList(state.List);
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.List));
     }
+
+    public DynamicResult<TFormat> UpdateMap(
+        Func<string, Dynamic<TFormat>, DynamicResult<TFormat>> fieldUpdater
+    )
+    {
+        var state = new MapTransformState
+        {
+            Map = Ops.CreateEmptyMap(),
+            KeyFound = false,
+            ErrorState = DataResult<Unit>.Success(default),
+        };
+
+        var consumer = new MapUpdater(Ops, fieldUpdater);
+        var readResult = Ops.ReadMap(Value, ref state, consumer);
+
+        if (readResult.IsError)
+            return DataResult<Dynamic<TFormat>>.Fail(readResult.ErrorMessage);
+        if (state.IsError)
+            return DataResult<Dynamic<TFormat>>.Fail(state.ErrorMessage);
+
+        state.Map = Ops.FinalizeMap(state.Map);
+        return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
+    }
+
     #region Utility Structs
     private readonly struct MapKeyAdder : IMapConsumer<MapTransformState, TFormat>
     {
