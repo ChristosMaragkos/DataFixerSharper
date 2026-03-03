@@ -231,5 +231,14 @@ public readonly struct Dynamic<TFormat>
         public bool IsError => ErrorState.IsError;
         public string ErrorMessage => ErrorState.ErrorMessage;
     }
+
+    private ref struct ListTransformState
+    {
+        public TFormat List;
+        public DataResult<Unit> ErrorState;
+
+        public bool IsError => ErrorState.IsError;
+        public string ErrorMessage => ErrorState.ErrorMessage;
+    }
     #endregion
 }
