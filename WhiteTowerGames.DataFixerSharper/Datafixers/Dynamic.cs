@@ -222,6 +222,87 @@ public readonly struct Dynamic<TFormat>
         }
     }
 
+    private readonly struct ListUpdater : ICollectionConsumer<ListTransformState, TFormat>
+    {
+        public readonly IDynamicOps<TFormat> Ops;
+        public readonly Func<Dynamic<TFormat>, DynamicResult<TFormat>> Updater;
+
+        public ListUpdater(
+            IDynamicOps<TFormat> ops,
+            Func<Dynamic<TFormat>, DynamicResult<TFormat>> updater
+        )
+        {
+            Ops = ops;
+            Updater = updater;
+        }
+
+        public void Accept(ref ListTransformState list, TFormat item)
+        {
+            if (list.IsError)
+                return;
+
+            var currentDyn = new Dynamic<TFormat>(Ops, item);
+            var updatedResult = Updater(currentDyn);
+
+            if (updatedResult.IsError)
+            {
+                list.ErrorState = DataResult<Unit>.Fail(updatedResult.ErrorMessage);
+                return;
+            }
+
+            var addResult = Ops.AddToList(list.List, updatedResult.GetOrThrow().Value);
+            if (addResult.IsError)
+                list.ErrorState = DataResult<Unit>.Fail(addResult.ErrorMessage);
+            else
+                list.List = addResult.GetOrThrow();
+        }
+    }
+
+    private readonly struct MapUpdater : IMapConsumer<MapTransformState, TFormat>
+    {
+        public readonly IDynamicOps<TFormat> Ops;
+        public readonly Func<string, Dynamic<TFormat>, DynamicResult<TFormat>> Updater;
+
+        public MapUpdater(
+            IDynamicOps<TFormat> ops,
+            Func<string, Dynamic<TFormat>, DynamicResult<TFormat>> updater
+        )
+        {
+            Ops = ops;
+            Updater = updater;
+        }
+
+        public void Accept(ref MapTransformState map, TFormat key, TFormat value)
+        {
+            if (map.IsError)
+                return;
+
+            var keyStrResult = Ops.GetString(key);
+            if (keyStrResult.IsError)
+            {
+                map.ErrorState = DataResult<Unit>.Fail(keyStrResult.ErrorMessage);
+                return;
+            }
+
+            var keyString = keyStrResult.GetOrThrow();
+            var currentDyn = new Dynamic<TFormat>(Ops, value);
+
+            var updatedResult = Updater(keyString, currentDyn);
+
+            if (updatedResult.IsError)
+            {
+                map.ErrorState = DataResult<Unit>.Fail(updatedResult.ErrorMessage);
+                return;
+            }
+
+            var addResult = Ops.AddToMap(map.Map, key, updatedResult.GetOrThrow().Value);
+            if (addResult.IsError)
+                map.ErrorState = DataResult<Unit>.Fail(addResult.ErrorMessage);
+            else
+                map.Map = addResult.GetOrThrow();
+        }
+    }
+
     private ref struct MapTransformState
     {
         public TFormat Map;
