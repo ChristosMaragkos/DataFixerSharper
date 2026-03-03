@@ -1,6 +1,7 @@
 using WhiteTowerGames.DataFixerSharper.Datafixers;
 using WhiteTowerGames.DataFixerSharper.Json;
 using WhiteTowerGames.DataFixerSharper.Schemas;
+using WhiteTowerGames.DataFixerSharper.Versioning;
 
 namespace WhiteTowerGames.DataFixerSharper.Tests.DataFixing;
 
@@ -14,7 +15,7 @@ public class Migration
         var engine = new DataFixEngine<JsonByteBuffer>(JsonOps);
 
         var playerSchema = new RecordSchema(
-            new Dictionary<string, ISchemaType> { { "hp", new PrimitiveSchema() } }
+            new Dictionary<string, ISchemaType> { { "hp", BuiltinSchemas.Number } }
         );
 
         Func<Dynamic<JsonByteBuffer>, DynamicResult<JsonByteBuffer>> rule = dyn =>
