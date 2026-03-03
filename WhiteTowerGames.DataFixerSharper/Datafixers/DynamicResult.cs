@@ -53,6 +53,34 @@ public readonly struct DynamicResult<TFormat>
 
         return Data.Rename(oldKey, newKey);
     }
+
+    /// <summary>
+    /// Iterates over a list applying the updater function to each element. Then, returns a new list.
+    /// Fails if the current value is not a list or if any element fails to update.
+    /// </summary>
+    public DynamicResult<TFormat> UpdateList(
+        Func<Dynamic<TFormat>, DynamicResult<TFormat>> itemUpdater
+    )
+    {
+        if (IsError)
+            return this;
+
+        return Data.UpdateList(itemUpdater);
+    }
+
+    /// <summary>
+    /// Iterates over a map applying the updater to each key-value pair. Then, returns a new map.
+    /// Fails if the current value is not a valid map or any key-value pair fails to update properly.
+    /// </summary>
+    public DynamicResult<TFormat> UpdateMap(
+        Func<string, Dynamic<TFormat>, DynamicResult<TFormat>> fieldUpdater
+    )
+    {
+        if (IsError)
+            return this;
+        return Data.UpdateMap(fieldUpdater);
+    }
+
     public DynamicResult<TFormat> Map(Func<Dynamic<TFormat>, DynamicResult<TFormat>> mapper) =>
         _result.Map(mapper).GetOrElse(this);
 
