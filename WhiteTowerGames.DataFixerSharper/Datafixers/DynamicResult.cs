@@ -97,6 +97,9 @@ public readonly struct DynamicResult<TFormat>
 
     public static implicit operator DynamicResult<TFormat>(Dynamic<TFormat> data) => Success(data);
 
+    public static explicit operator Dynamic<TFormat>(DynamicResult<TFormat> result) =>
+        result._result.GetOrThrow();
+
     public bool IsError => _result.IsError;
     public string ErrorMessage => _result.ErrorMessage;
     private Dynamic<TFormat> Data => _result.GetOrThrow();
