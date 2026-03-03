@@ -1,9 +1,7 @@
-using WhiteTowerGames.DataFixerSharper.Abstractions;
-
 namespace WhiteTowerGames.DataFixerSharper.Datafixers;
 
-public interface IDataFix
+public interface IDataFix<TFormat>
 {
     Version Since { get; init; }
-    DataResult<Dynamic<TFormat>> Apply<TFormat>(Dynamic<TFormat> input);
+    DynamicResult<TFormat> Apply(DynamicResult<TFormat> input);
 }
