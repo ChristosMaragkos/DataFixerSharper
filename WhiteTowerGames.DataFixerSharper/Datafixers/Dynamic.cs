@@ -35,7 +35,7 @@ public readonly struct Dynamic<TFormat>
         var readResult = Ops.ReadMap(Value, ref state, consumer);
 
         if (readResult.IsError)
-            return DataResult<Dynamic<TFormat>>.Fail(readResult.ErrorMessage);
+            return DataResult<Dynamic<TFormat>>.Success(this);
         if (state.IsError)
             return DataResult<Dynamic<TFormat>>.Fail(state.ErrorMessage);
 
@@ -114,7 +114,7 @@ public readonly struct Dynamic<TFormat>
         var readResult = Ops.ReadList(Value, ref state, consumer);
 
         if (readResult.IsError)
-            return DataResult<Dynamic<TFormat>>.Fail(readResult.ErrorMessage);
+            return DataResult<Dynamic<TFormat>>.Success(this);
         if (state.IsError)
             return DataResult<Dynamic<TFormat>>.Fail(state.ErrorMessage);
 
@@ -137,7 +137,7 @@ public readonly struct Dynamic<TFormat>
         var readResult = Ops.ReadMap(Value, ref state, consumer);
 
         if (readResult.IsError)
-            return DataResult<Dynamic<TFormat>>.Fail(readResult.ErrorMessage);
+            return DataResult<Dynamic<TFormat>>.Success(this);
         if (state.IsError)
             return DataResult<Dynamic<TFormat>>.Fail(state.ErrorMessage);
 
