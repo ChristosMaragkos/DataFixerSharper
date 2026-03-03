@@ -23,8 +23,6 @@ public class Migration
 
         var fixV1_1 = new SchemaDrivenFix<JsonByteBuffer>(new Version(1, 1), playerSchema, rule);
 
-        engine.RegisterDatafix(fixV1_1);
-
         var v1Data = JsonOps.CreateEmptyMap();
         v1Data = JsonOps
             .AddToMap(v1Data, JsonOps.CreateString("hp"), JsonOps.CreateNumeric(5m))
@@ -32,18 +30,15 @@ public class Migration
 
         v1Data = JsonOps.FinalizeMap(v1Data);
 
-        var from = new Version(1, 0);
-        var to = new Version(2, 0);
-
-        var result = engine.Migrate(from, to, v1Data);
+        var result = fixV1_1.Apply(new Dynamic<JsonByteBuffer>(JsonOps, v1Data));
 
         Assert.False(result.IsError, $"Migration failed: {result.ErrorMessage}");
 
         var migratedData = result.GetOrThrow();
-        var oldKeyCheck = JsonOps.GetValue(migratedData, "hp");
+        var oldKeyCheck = JsonOps.GetValue(migratedData.Value, "hp");
         Assert.True(oldKeyCheck.IsError, "The old 'hp' key was not removed");
 
-        var newKeyCheck = JsonOps.GetValue(migratedData, "health");
+        var newKeyCheck = JsonOps.GetValue(migratedData.Value, "health");
         Assert.False(newKeyCheck.IsError, "The new 'health' key was not added");
 
         var healthValue = JsonOps.GetNumber(newKeyCheck.GetOrThrow()).GetOrThrow();
@@ -84,8 +79,7 @@ public class Migration
             .EndVersion()
             .Build<Player>();
 
-        foreach (var fix in playerTimeline.Fixes)
-            engine.RegisterDatafix(fix);
+        engine.RegisterTimeline(playerTimeline);
 
         var v1Data = JsonOps.CreateEmptyMap();
         v1Data = JsonOps
@@ -97,7 +91,7 @@ public class Migration
         v1Data = JsonOps.FinalizeMap(v1Data);
 
         Console.WriteLine(v1Data.ToJsonString());
-        var result = engine.Migrate(new Version(1, 0, 0), new Version(1, 2, 0), v1Data);
+        var result = engine.Migrate<Player>(new Version(1, 0, 0), new Version(1, 2, 0), v1Data);
 
         Assert.False(result.IsError, $"Migration Failed: {result.ErrorMessage}");
         var migrated = result.GetOrThrow();
