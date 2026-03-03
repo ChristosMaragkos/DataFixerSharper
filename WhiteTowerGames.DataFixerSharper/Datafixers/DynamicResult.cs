@@ -46,6 +46,13 @@ public readonly struct DynamicResult<TFormat>
         return Data.Set(key, valueResult.Data);
     }
 
+    public DynamicResult<TFormat> Rename(string oldKey, string newKey)
+    {
+        if (IsError)
+            return this;
+
+        return Data.Rename(oldKey, newKey);
+    }
     public DynamicResult<TFormat> Map(Func<Dynamic<TFormat>, DynamicResult<TFormat>> mapper) =>
         _result.Map(mapper).GetOrElse(this);
 
