@@ -2,26 +2,28 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Datafixers;
 
-public static class DataFixer
+public sealed class DataFixEngine<TFormat>
 {
-    private static readonly SortedDictionary<Version, List<IDataFix>> DataFixes = new();
+    private readonly IDynamicOps<TFormat> _ops;
+    private readonly SortedDictionary<Version, List<IDataFix<TFormat>>> _fixes = new();
 
-    public static void RegisterDatafix(IDataFix fix)
+    public DataFixEngine(IDynamicOps<TFormat> ops)
     {
-        DataFixes.TryAdd(fix.Since, new());
-        DataFixes[fix.Since].Add(fix);
+        _ops = ops;
     }
 
-    public static DataResult<TFormat> Migrate<TOps, TFormat>(
-        Version fromVersion,
-        Version toVersion,
-        TOps ops,
-        TFormat data
-    )
-        where TOps : IDynamicOps<TFormat>
+    public void RegisterDatafix(IDataFix<TFormat> fix)
     {
-        var migrating = new Dynamic<TFormat>(ops, data);
-        foreach (var (version, fixes) in DataFixes)
+        if (!_fixes.ContainsKey(fix.Since))
+            _fixes[fix.Since] = new List<IDataFix<TFormat>>();
+
+        _fixes[fix.Since].Add(fix);
+    }
+
+    public DataResult<TFormat> Migrate(Version fromVersion, Version toVersion, TFormat data)
+    {
+        var migrating = new Dynamic<TFormat>(_ops, data);
+        foreach (var (version, fixes) in _fixes)
         {
             if (version < fromVersion)
                 continue;
