@@ -84,6 +84,13 @@ public readonly struct DynamicResult<TFormat>
     public DynamicResult<TFormat> Map(Func<Dynamic<TFormat>, DynamicResult<TFormat>> mapper) =>
         _result.Map(mapper).GetOrElse(this);
 
+    public DynamicResult<TFormat> UnsafeMap(Func<Dynamic<TFormat>, DynamicResult<TFormat>> mapper)
+    {
+        if (IsError)
+            return this;
+        return mapper(Data);
+    }
+
     public DataResult<Dynamic<TFormat>> GetOrElse(Dynamic<TFormat> defaultValue) =>
         !IsError
             ? DataResult<Dynamic<TFormat>>.Success(Data)
