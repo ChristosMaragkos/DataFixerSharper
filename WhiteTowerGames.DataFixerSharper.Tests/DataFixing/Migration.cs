@@ -49,4 +49,69 @@ public class Migration
         var healthValue = JsonOps.GetNumber(newKeyCheck.GetOrThrow()).GetOrThrow();
         Assert.Equal(5m, healthValue);
     }
+
+    private record Player;
+
+    [Fact]
+    public void TimelineBuilder_Executes_Correctly()
+    {
+        var engine = new DataFixEngine<JsonByteBuffer>(JsonOps);
+        var playerTimeline = TimelineBuilder<JsonByteBuffer>
+            .Create()
+            .BaseSchema(
+                new Dictionary<string, ISchemaType>
+                {
+                    { "hp", BuiltinSchemas.Number },
+                    { "name", BuiltinSchemas.String },
+                }
+            )
+            .SinceVersion(new Version(1, 1, 0))
+            .FieldRenamed("hp", "health")
+            .FieldAdded("mana", BuiltinSchemas.Number, 10)
+            .EndVersion()
+            .SinceVersion(new Version(1, 2, 0))
+            .FieldRemoved("name")
+            .CustomRule(dyn =>
+            {
+                var healthDyn = dyn.Get("health");
+                if (healthDyn.IsError)
+                    return dyn;
+
+                var health = JsonOps.GetNumber(healthDyn.GetOrThrow().Value).GetOrThrow();
+                var newHealth = JsonOps.CreateNumeric(health * 2);
+                return dyn.Set("health", new Dynamic<JsonByteBuffer>(JsonOps, newHealth));
+            })
+            .EndVersion()
+            .Build<Player>();
+
+        foreach (var fix in playerTimeline.Fixes)
+            engine.RegisterDatafix(fix);
+
+        var v1Data = JsonOps.CreateEmptyMap();
+        v1Data = JsonOps
+            .AddToMap(v1Data, JsonOps.CreateString("hp"), JsonOps.CreateNumeric(50))
+            .GetOrThrow();
+        v1Data = JsonOps
+            .AddToMap(v1Data, JsonOps.CreateString("name"), JsonOps.CreateString("Hero"))
+            .GetOrThrow();
+        v1Data = JsonOps.FinalizeMap(v1Data);
+
+        Console.WriteLine(v1Data.ToJsonString());
+        var result = engine.Migrate(new Version(1, 0, 0), new Version(1, 2, 0), v1Data);
+
+        Assert.False(result.IsError, $"Migration Failed: {result.ErrorMessage}");
+        var migrated = result.GetOrThrow();
+        Console.WriteLine(migrated.ToJsonString());
+
+        Assert.True(JsonOps.GetValue(migrated, "hp").IsError, "Old field 'hp' was not removed");
+        Assert.True(JsonOps.GetValue(migrated, "name").IsError, "Old field 'name' was not removed");
+
+        var manaNode = JsonOps.GetValue(migrated, "mana");
+        Assert.False(manaNode.IsError, "New field 'mana' was not added");
+        Assert.Equal(10m, JsonOps.GetNumber(manaNode.GetOrThrow()).GetOrThrow());
+
+        var healthNode = JsonOps.GetValue(migrated, "health");
+        Assert.False(healthNode.IsError, "New field 'health' was not added");
+        Assert.Equal(100m, JsonOps.GetNumber(healthNode.GetOrThrow()).GetOrThrow());
+    }
 }
