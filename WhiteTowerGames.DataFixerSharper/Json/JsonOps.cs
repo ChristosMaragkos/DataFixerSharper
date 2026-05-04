@@ -4,7 +4,6 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Json;
 
-// TODO: Implement batch map/list ops. Streaming collections once per new item is a crime against software engineering.
 public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 {
     public static JsonOps Instance { get; } = new();
@@ -65,7 +64,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(buffer);
     }
 
-    // TODO: Stackalloc for strings less than ~128 bytes since this monstrosity always allocates a buffer on the heap under the hood
     public JsonByteBuffer CreateString(string value) => JsonSerializer.SerializeToUtf8Bytes(value);
 
     public JsonByteBuffer CreateBool(bool value) => value ? TrueValue : FalseValue;

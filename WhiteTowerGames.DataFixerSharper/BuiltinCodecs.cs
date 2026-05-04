@@ -51,10 +51,7 @@ public static class BuiltinCodecs
     {
         return String
             .ForList()
-            .Unsafe2SafeMap<TEnum>(
-                value => FlagsToStringArray(value),
-                strArray => StringArrayToFlags<TEnum>(strArray)
-            );
+            .Unsafe2SafeMap(value => FlagsToStringArray(value), StringArrayToFlags<TEnum>);
     }
 
     private static List<string> FlagsToStringArray<TEnum>(TEnum value)
