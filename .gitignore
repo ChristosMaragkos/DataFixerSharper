@@ -5,4 +5,5 @@ Benchmarks/BenchmarkDotNet.Artifacts/
 BenchmarkDotNet.Artifacts/
 
 artifacts/
+scripts/
 .editorconfig
