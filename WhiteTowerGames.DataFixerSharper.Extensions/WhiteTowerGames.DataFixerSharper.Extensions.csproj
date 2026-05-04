@@ -8,6 +8,22 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>DataFixerSharper.Extensions</PackageId>
+    <Version>1.0.0</Version>
+    <Author>Christos Maragkos</Author>
+    <Owner>Christos Maragkos</Owner>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/ChristosMaragkos/DataFixerSharper</RepositoryUrl>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../LICENSE" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 
 </Project>
