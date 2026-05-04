@@ -17,10 +17,9 @@ internal sealed class PooledJsonWriter
 
     public ReadOnlySpan<byte> WrittenSpan => _buffer.AsSpan(0, _written);
 
-    public PooledJsonWriter Reset()
+    public void Reset()
     {
         _written = 0;
-        return this;
     }
 
     public void Write(ReadOnlySpan<byte> data)

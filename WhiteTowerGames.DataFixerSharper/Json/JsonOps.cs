@@ -118,7 +118,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
             return DataResult<JsonByteBuffer>.Fail(KeyNotFound);
 
-        while (reader.Read() || reader.TokenType != JsonTokenType.EndObject)
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
         {
             if (reader.TokenType == JsonTokenType.PropertyName && reader.ValueTextEquals(name))
             {
@@ -240,7 +240,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
             return DataResult<Unit>.Fail($"Expected a JSON object, instead got {reader.TokenType}");
 
-        while (reader.Read() || reader.TokenType != JsonTokenType.EndObject)
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
         {
             if (reader.TokenType != JsonTokenType.PropertyName)
             {

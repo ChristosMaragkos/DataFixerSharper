@@ -1,6 +1,7 @@
 # DataFixerSharper
 
 DataFixerSharper is a C# reimplementation of Mojang's [DataFixerUpper](https://www.github.com/Mojang/DataFixerUpper) Java library. It is designed to be used as a:
+
 - Format-agnostic
 - Bidirectional
 - Composable
@@ -11,6 +12,7 @@ There is a multitude of Codec types that range from simple to slightly less so, 
 The main entrypoint is the `ICodec<T>`. A codec knows how to leverage data in order to serialize to and from specific formats, like JSON.
 There are built-in codecs for most primitive types, found in `BuiltinCodecs`, which can be used to incrementally create codecs for more complex classes by combining them and applying transformations on them.
 For example, you can:
+
 - Create an `ICodec<IEnumerable<T>>` out of any `ICodec<T>` with any of the relevant methods (`ICodec.ForArray`,`ICodec.ForList`, etc.)
 - Create codecs by safely mapping between mutually convertible types such as a `Vector3` and a `float[]` with automatic runtime validation using `SafeMap` and its friends (which map 1-1 with DFU's `xmap` and `flatmap`).
 - Serialize and deserialize enum values and bitfields either to integers or string arrays.
@@ -19,12 +21,15 @@ All conversions in DataFixerSharper return a `DataResult<T>`, which serves as a 
 and codecs do not hold any reference to the format they operate with - you can implement `IDynamicOps<T>` for your format of choice and use all of your existing codecs for it. For a concrete example, take a look at `JsonOps`.
 
 ---
+
 ## Codec Types
+
 A few implementations of `ICodec` allow you to seamlessly serialize even complex classes.
 
 For example, `RecordCodecBuilder` is likely to be your best friend as it lets you map fields to getters and constructor parameters, having the Codec resolve them for you.
 
 Syntax:
+
 ```csharp
 public sealed record Person(string Name, int Age = 0);
 
@@ -38,7 +43,7 @@ public static readonly Codec<Person> PersonCodec = RecordCodecBuilder.Create(ins
 
 // Then, to use it:
 Person person = new Person("John Doe", 18);
-DataResult<JsonNode> encoded = PersonCodec.EncodeStart(JsonOps.Instance, person); // EncodeStart encodes one single value without appending it to existing serialized data.
+DataResult<JsonByteBuffer> encoded = PersonCodec.EncodeStart(JsonOps.Instance, person); // EncodeStart encodes one single value without appending it to existing serialized data.
 
 // Now "encoded" holds our serialized data - we can write it to a file or decode it back into a Person using the same codec:
 var personData = encoded.ResultOrPartial();
@@ -84,6 +89,7 @@ private static Codec<Shape> CodecByType(string discriminator)
 ```
 
 ## `DataFix`es
+
 Games and applications evolve, and data structures change. DataFixerSharper includes a powerful, schema-driven Data Migration Engine that allows you to cleanly define how your data changes across versions without writing messy, error-prone manual JSON manipulation.
 
 Instead of writing manual rules, you may define a Timeline for your domain objects using a fluent builder. The engine will automatically walk the data tree and apply your migrations sequentially.
@@ -126,14 +132,14 @@ public static readonly Timeline<Player, JsonByteBuffer> PlayerTimeline = Timelin
 To actually execute these migrations, you use the DataFixEngine. This acts as a central router for your entire application. You register all your timelines into it during startup, and it safely routes your data to the correct migration pipeline based on the type you request.
 
 ```csharp
-// 1. Create your centralized engine (maybe even as a Singleton in DI?)
+// Create your centralized engine (maybe even as a Singleton in DI?)
 var engine = new DataFixEngine<JsonByteBuffer>(JsonOps.Instance);
 
-// 2. Register your timelines (Cartridges into the Console)
+// Register your timelines
 engine.RegisterTimeline(PlayerTimeline);
 engine.RegisterTimeline(InventoryTimeline); // Completely isolated from Player rules!
 
-// 3. Migrate outdated data dynamically!
+// Migrate outdated data dynamically!
 // E.g., The user loads a save file from v1.0.0, but the game is currently v1.2.0
 var result = engine.Migrate<Player>(
     fromVersion: new Version(1, 0, 0), 
@@ -144,6 +150,6 @@ var result = engine.Migrate<Player>(
 if (!result.IsError)
 {
     var modernData = result.GetOrThrow();
-    // modernData is now guaranteed to be v1.2.0 compliant!
+    // modernData is now guaranteed to be v1.2.0 compliant
 }
 ```
