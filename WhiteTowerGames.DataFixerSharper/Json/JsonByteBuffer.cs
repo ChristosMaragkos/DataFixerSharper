@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -8,15 +7,15 @@ namespace WhiteTowerGames.DataFixerSharper.Json;
 public readonly struct JsonByteBuffer
 {
     public readonly ReadOnlyMemory<byte> Memory; // If we are decoding, this holds the data
-    internal readonly ArrayBufferWriter<byte>? Writer; // If we are encoding, this holds the writer
+    internal readonly PooledJsonWriter? Writer; // If we are encoding, this holds the writer
 
-    public JsonByteBuffer(ReadOnlyMemory<byte> memory)
+    internal JsonByteBuffer(ReadOnlyMemory<byte> memory)
     {
         Memory = memory;
         Writer = null;
     }
 
-    public JsonByteBuffer(ArrayBufferWriter<byte> writer)
+    internal JsonByteBuffer(PooledJsonWriter writer)
     {
         Memory = default;
         Writer = writer;

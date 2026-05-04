@@ -1,6 +1,4 @@
-using System.Buffers;
 using System.Buffers.Text;
-using System.Text;
 using System.Text.Json;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 
@@ -13,7 +11,22 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
     private JsonOps() { }
 
-    private static JsonByteBuffer BytesFromString(string str) => Encoding.UTF8.GetBytes(str);
+    [ThreadStatic]
+    private static Stack<PooledJsonWriter>? _writerPool;
+
+    private static PooledJsonWriter RentWriter()
+    {
+        var stack = _writerPool ??= new Stack<PooledJsonWriter>(4);
+        if (stack.Count > 0)
+        {
+            var w = stack.Pop();
+            w.Reset();
+            return w;
+        }
+        return new PooledJsonWriter();
+    }
+
+    private static void ReturnWriter(PooledJsonWriter writer) => _writerPool!.Push(writer);
 
     #region Pre-allocated strings
     private static readonly JsonByteBuffer EmptyValue = "{}"u8.ToArray(); // apparently c# lets you generate utf8-encoded strings. How long has this been a thing?
@@ -47,7 +60,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
             return default;
 
         var buffer = new byte[byteAmount];
-        temp.Slice(0, byteAmount).CopyTo(buffer);
+        temp[..byteAmount].CopyTo(buffer);
 
         return new JsonByteBuffer(buffer);
     }
@@ -126,7 +139,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #region Enumerables
     public JsonByteBuffer CreateEmptyList()
     {
-        var writer = new ArrayBufferWriter<byte>();
+        var writer = RentWriter();
         writer.Write(ArrayOpen);
         return new JsonByteBuffer(writer);
     }
@@ -176,15 +189,20 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         if (list.Writer == null)
             return list;
 
-        list.Writer.Write(ArrayClose);
-        return new JsonByteBuffer(list.Writer.WrittenMemory);
+        var writer = list.Writer;
+        writer.Write(ArrayClose);
+
+        // Return pool writer and use exact-size copy
+        var result = new JsonByteBuffer(writer.WrittenSpan.ToArray());
+        ReturnWriter(writer);
+        return result;
     }
     #endregion
 
     #region Maps
     public JsonByteBuffer CreateEmptyMap()
     {
-        var writer = new ArrayBufferWriter<byte>();
+        var writer = RentWriter();
         writer.Write(ObjectOpen);
         return new JsonByteBuffer(writer);
     }
@@ -249,8 +267,12 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         if (map.Writer == null)
             return map;
 
-        map.Writer.Write(ObjectClose);
-        return new JsonByteBuffer(map.Writer.WrittenMemory);
+        var writer = map.Writer;
+        writer.Write(ObjectClose);
+
+        var result = new JsonByteBuffer(writer.WrittenSpan.ToArray());
+        ReturnWriter(writer);
+        return result;
     }
     #endregion
 
@@ -262,13 +284,15 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         if (value.Writer != null)
         {
             var writer = value.Writer;
+            byte firstByte = writer.WrittenSpan[0];
 
-            if (writer.WrittenSpan[0] == (byte)'[')
+            if (firstByte == (byte)'[')
                 writer.Write(ArrayClose);
-            else if (writer.WrittenSpan[0] == (byte)'{')
+            else if (firstByte == (byte)'{')
                 writer.Write(ObjectClose);
 
-            finalizedValue = new JsonByteBuffer(writer.WrittenMemory);
+            finalizedValue = new JsonByteBuffer(writer.WrittenSpan.ToArray());
+            ReturnWriter(writer);
         }
 
         if (IsEmptyJson(in prefix))
@@ -313,7 +337,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return buffer.Memory.Span[0] == (byte)'{' && buffer.Memory.Span[^1] == (byte)'}';
     }
 
-    private JsonByteBuffer MergeArrays(in JsonByteBuffer left, in JsonByteBuffer right)
+    private static JsonByteBuffer MergeArrays(in JsonByteBuffer left, in JsonByteBuffer right)
     {
         if (IsEmptyJson(in left))
             return right;
@@ -337,7 +361,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(merged);
     }
 
-    private JsonByteBuffer MergeObjects(in JsonByteBuffer left, in JsonByteBuffer right)
+    private static JsonByteBuffer MergeObjects(in JsonByteBuffer left, in JsonByteBuffer right)
     {
         if (IsEmptyJson(in left))
             return right;
