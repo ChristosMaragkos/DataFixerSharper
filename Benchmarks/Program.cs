@@ -75,16 +75,13 @@ public class CodecBenchmarks
     [Benchmark]
     public void Codec_Deserialize()
     {
-        PersonCodec.Parse<JsonOps, JsonByteBuffer>(JsonOps, MemoryPerson);
+        PersonCodec.Parse(JsonOps, MemoryPerson);
     }
 
-    private static readonly JsonByteBuffer MemoryPerson = new JsonByteBuffer(
-        Encoding.UTF8.GetBytes("""{"Name":"John","Age":10}""")
-    );
+    private static readonly JsonByteBuffer MemoryPerson =
+        """{"Name":"John","Age":10}"""u8.ToArray();
 
-    private static readonly JsonByteBuffer MemoryIntegers = new JsonByteBuffer(
-        Encoding.UTF8.GetBytes("[1,2,3]")
-    );
+    private static readonly JsonByteBuffer MemoryIntegers = "[1,2,3]"u8.ToArray();
 
     [Benchmark]
     public void Codec_Deserialize_IntArray()
@@ -98,10 +95,5 @@ internal class Program
     public static void Main(string[] args)
     {
         BenchmarkRunner.Run<CodecBenchmarks>();
-        //     var bench = new CodecBenchmarks();
-        //     for (var i = 0; i < 100; i++)
-        //         bench.Codec_Deserialize();
-        //     for (var i = 0; i < 10000; i++)
-        //         bench.Codec_Deserialize();
     }
 }
