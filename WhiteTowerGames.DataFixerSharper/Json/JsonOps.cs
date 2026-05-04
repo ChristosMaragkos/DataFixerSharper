@@ -1,5 +1,6 @@
 using System.Buffers.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Json;
@@ -64,7 +65,8 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(buffer);
     }
 
-    public JsonByteBuffer CreateString(string value) => JsonSerializer.SerializeToUtf8Bytes(value);
+    public JsonByteBuffer CreateString(string value) =>
+        JsonSerializer.SerializeToUtf8Bytes(value, JsonStringContext.Default.String);
 
     public JsonByteBuffer CreateBool(bool value) => value ? TrueValue : FalseValue;
     #endregion
@@ -383,3 +385,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     }
     #endregion
 }
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(string))]
+internal partial class JsonStringContext : JsonSerializerContext { }
