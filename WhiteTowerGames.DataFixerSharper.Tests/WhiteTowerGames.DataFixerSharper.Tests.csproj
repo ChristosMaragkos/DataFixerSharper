@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WhiteTowerGames.DataFixerSharper\WhiteTowerGames.DataFixerSharper.csproj" />
+    <ProjectReference Include="..\WhiteTowerGames.DataFixerSharper.Extensions\WhiteTowerGames.DataFixerSharper.Extensions.csproj" />
   </ItemGroup>
 
 </Project>

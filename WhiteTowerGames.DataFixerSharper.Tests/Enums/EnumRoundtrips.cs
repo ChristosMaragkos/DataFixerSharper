@@ -1,8 +1,9 @@
+using WhiteTowerGames.DataFixerSharper.Extensions.Enums;
 using WhiteTowerGames.DataFixerSharper.Json;
 
 namespace WhiteTowerGames.DataFixerSharper.Tests.Enums;
 
-public class EnumCodecs
+public class EnumRoundtrips
 {
     private enum CardinalDirections
     {
@@ -27,7 +28,7 @@ public class EnumCodecs
     public void EnumByValue_Roundtrip_Deterministic()
     {
         // Given
-        var codec = BuiltinCodecs.EnumByValue<CardinalDirections>();
+        var codec = EnumCodecs.EnumByValue<CardinalDirections>();
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
@@ -43,7 +44,7 @@ public class EnumCodecs
     public void EnumByName_Roundtrip_Deterministic()
     {
         // Given
-        var codec = BuiltinCodecs.EnumByName<CardinalDirections>();
+        var codec = EnumCodecs.EnumByName<CardinalDirections>();
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
@@ -59,7 +60,7 @@ public class EnumCodecs
     public void EnumByValue_HandlesFlags()
     {
         // Given
-        var codec = BuiltinCodecs.EnumByName<BitFlags>();
+        var codec = EnumCodecs.EnumByName<BitFlags>();
         var testValue = BitFlags.One | BitFlags.Two;
 
         // When
@@ -74,7 +75,7 @@ public class EnumCodecs
     public void FlagsByName_Roundtrip_HandlesFlags()
     {
         // Given
-        var codec = BuiltinCodecs.FlagsByName<BitFlags>();
+        var codec = EnumCodecs.FlagsByName<BitFlags>();
         var flagsArray = new string[] { "One", "Two" };
         var bitflags = BitFlags.One | BitFlags.Two;
 
@@ -88,16 +89,16 @@ public class EnumCodecs
     }
 
     [Fact]
-    public void FlagsByName_Fails_ForNonFlagEnum()
+    public void FlagsByName_Throws_ForNonFlagEnum()
     {
         // Given
-        var codec = BuiltinCodecs.FlagsByName<CardinalDirections>();
         var value = CardinalDirections.North | CardinalDirections.South;
 
-        // When
-        var encoded = codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
-
-        // Then
-        Assert.True(codec.Parse(JsonOps, encoded).IsError);
+        // When, Then
+        Assert.ThrowsAny<Exception>(() =>
+        {
+            var codec = EnumCodecs.FlagsByName<CardinalDirections>();
+            codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
+        });
     }
 }
