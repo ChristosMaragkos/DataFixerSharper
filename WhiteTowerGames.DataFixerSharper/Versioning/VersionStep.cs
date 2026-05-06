@@ -8,7 +8,7 @@ public class VersionStepBuilder<TFormat>
 {
     private readonly Version _sinceVersion;
     private readonly Dictionary<string, ISchemaType> _fields;
-    private readonly List<Func<Dynamic<TFormat>, DynamicResult<TFormat>>> _rules = new();
+    private readonly List<Func<Dynamic<TFormat>, DynamicResult<TFormat>>> _rules = [];
     private readonly TimelineBuilder<TFormat> _outerBuilder;
     private readonly RecordSchema _inputSchema;
 
@@ -32,9 +32,7 @@ public class VersionStepBuilder<TFormat>
     )
     {
         _fields[fieldName] = fieldSchema;
-        _rules.Add(dyn =>
-            dyn.Set(fieldName, new Dynamic<TFormat>(dyn.Ops, dyn.Ops.CreateString(defaultValue)))
-        );
+        _rules.Add(dyn => dyn.Set(fieldName, dyn.Ops.CreateString(defaultValue)));
         return this;
     }
 
@@ -45,9 +43,7 @@ public class VersionStepBuilder<TFormat>
     )
     {
         _fields[fieldName] = fieldSchema;
-        _rules.Add(dyn =>
-            dyn.Set(fieldName, new Dynamic<TFormat>(dyn.Ops, dyn.Ops.CreateNumeric(defaultValue)))
-        );
+        _rules.Add(dyn => dyn.Set(fieldName, dyn.Ops.CreateNumeric(defaultValue)));
         return this;
     }
 
@@ -58,9 +54,7 @@ public class VersionStepBuilder<TFormat>
     )
     {
         _fields[fieldName] = fieldSchema;
-        _rules.Add(dyn =>
-            dyn.Set(fieldName, new Dynamic<TFormat>(dyn.Ops, dyn.Ops.CreateBool(defaultValue)))
-        );
+        _rules.Add(dyn => dyn.Set(fieldName, dyn.Ops.CreateBool(defaultValue)));
         return this;
     }
 
@@ -74,7 +68,7 @@ public class VersionStepBuilder<TFormat>
         _rules.Add(dyn =>
         {
             var newValue = defaultValueFactory(dyn.Ops);
-            return dyn.Set(fieldName, new Dynamic<TFormat>(dyn.Ops, newValue));
+            return dyn.Set(fieldName, newValue);
         });
         return this;
     }

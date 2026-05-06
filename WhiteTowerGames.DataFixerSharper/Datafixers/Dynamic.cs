@@ -22,7 +22,7 @@ public readonly struct Dynamic<TFormat>
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, result.GetOrThrow()));
     }
 
-    public DynamicResult<TFormat> Set(string targetKey, Dynamic<TFormat> newValue)
+    public DynamicResult<TFormat> Set(string targetKey, TFormat newValue)
     {
         var state = new MapTransformState
         {
@@ -31,7 +31,7 @@ public readonly struct Dynamic<TFormat>
             ErrorState = DataResult<Unit>.Success(default),
         };
 
-        var consumer = new MapKeyAdder(Ops, targetKey, newValue.Value);
+        var consumer = new MapKeyAdder(Ops, targetKey, newValue);
         var readResult = Ops.ReadMap(Value, ref state, consumer);
 
         if (readResult.IsError)
@@ -42,7 +42,7 @@ public readonly struct Dynamic<TFormat>
         if (!state.KeyFound)
         {
             var keyFormat = Ops.CreateString(targetKey);
-            var addResult = Ops.AddToMap(state.Map, keyFormat, newValue.Value);
+            var addResult = Ops.AddToMap(state.Map, keyFormat, newValue);
 
             if (addResult.IsError)
                 return DataResult<Dynamic<TFormat>>.Fail(addResult.ErrorMessage);
@@ -259,7 +259,11 @@ public readonly struct Dynamic<TFormat>
 
             return;
 
-            TFormat CreateNewKey(ref MapTransformState map, IDynamicOps<TFormat> ops, string newKey)
+            static TFormat CreateNewKey(
+                ref MapTransformState map,
+                IDynamicOps<TFormat> ops,
+                string newKey
+            )
             {
                 map.KeyFound = true;
                 return ops.CreateString(newKey);
@@ -354,8 +358,8 @@ public readonly struct Dynamic<TFormat>
         public bool KeyFound;
         public DataResult<Unit> ErrorState;
 
-        public bool IsError => ErrorState.IsError;
-        public string ErrorMessage => ErrorState.ErrorMessage;
+        public readonly bool IsError => ErrorState.IsError;
+        public readonly string ErrorMessage => ErrorState.ErrorMessage;
     }
 
     private ref struct ListTransformState
@@ -363,8 +367,8 @@ public readonly struct Dynamic<TFormat>
         public TFormat List;
         public DataResult<Unit> ErrorState;
 
-        public bool IsError => ErrorState.IsError;
-        public string ErrorMessage => ErrorState.ErrorMessage;
+        public readonly bool IsError => ErrorState.IsError;
+        public readonly string ErrorMessage => ErrorState.ErrorMessage;
     }
     #endregion
 }
