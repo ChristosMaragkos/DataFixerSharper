@@ -20,7 +20,7 @@ internal readonly struct UpcastCodec<TBase, TDer> : ICodec<TBase>
             return DataResult<(TBase, TFormat)>.Fail(decodedResult.ErrorMessage);
 
         var decoded = decodedResult.GetOrThrow();
-        return DataResult<(TBase, TFormat)>.Success(((TBase)decoded.Item1, decoded.Item2));
+        return DataResult<(TBase, TFormat)>.Success((decoded.Item1, decoded.Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
@@ -28,7 +28,7 @@ internal readonly struct UpcastCodec<TBase, TDer> : ICodec<TBase>
     {
         if (input is not TDer derived)
             return DataResult<TFormat>.Fail(
-                $"Cannot encode polymorphically: expected object of type {typeof(TDer).FullName}, got {input!.GetType().FullName} instead"
+                $"Cannot encode polymorphically: expected object of type {nameof(TBase)}, got {nameof(TBase)} instead"
             );
 
         return _underlying.Encode(derived, ops, prefix);
