@@ -249,8 +249,13 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
                 continue;
             }
 
-            var keyString = reader.GetString()!;
-            var keyBuffer = CreateString(keyString);
+            var keyStart = (int)reader.TokenStartIndex;
+            var keyLength = (int)reader.BytesConsumed - keyStart - 1;
+
+            var keyBuffer = new JsonByteBuffer(input.Memory.Slice(keyStart, keyLength));
+
+            // var keyString = reader.GetString()!;
+            // var keyBuffer = CreateString(keyString);
 
             reader.Read();
             var valStart = (int)reader.TokenStartIndex;
