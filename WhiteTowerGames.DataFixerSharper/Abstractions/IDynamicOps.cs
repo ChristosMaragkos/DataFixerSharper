@@ -161,13 +161,25 @@ public static class DynamicOpsExtensions
     public static TFormat CreateInt8<TOps, TFormat>(this TOps ops, sbyte value)
         where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
 
+    public static TFormat CreateUInt8<TOps, TFormat>(this TOps ops, byte value)
+        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
+
     public static TFormat CreateInt16<TOps, TFormat>(this TOps ops, short value)
+        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
+
+    public static TFormat CreateUInt16<TOps, TFormat>(this TOps ops, ushort value)
         where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
 
     public static TFormat CreateInt32<TOps, TFormat>(this TOps ops, int value)
         where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
 
+    public static TFormat CreateUInt32<TOps, TFormat>(this TOps ops, uint value)
+        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
+
     public static TFormat CreateInt64<TOps, TFormat>(this TOps ops, long value)
+        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
+
+    public static TFormat CreateUInt64<TOps, TFormat>(this TOps ops, ulong value)
         where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
 
     public static TFormat CreateFloat<TOps, TFormat>(this TOps ops, float value)
@@ -185,6 +197,15 @@ public static class DynamicOpsExtensions
             : DataResult<sbyte>.Success((sbyte)num.GetOrThrow());
     }
 
+    public static DataResult<byte> GetUInt8<TOps, TFormat>(this TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<byte>.Fail(num.ErrorMessage)
+            : DataResult<byte>.Success((byte)num.GetOrThrow());
+    }
+
     public static DataResult<short> GetInt16<TOps, TFormat>(this TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
@@ -192,6 +213,15 @@ public static class DynamicOpsExtensions
         return num.IsError
             ? DataResult<short>.Fail(num.ErrorMessage)
             : DataResult<short>.Success((short)num.GetOrThrow());
+    }
+
+    public static DataResult<ushort> GetUInt16<TOps, TFormat>(this TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<ushort>.Fail(num.ErrorMessage)
+            : DataResult<ushort>.Success((ushort)num.GetOrThrow());
     }
 
     public static DataResult<int> GetInt32<TOps, TFormat>(this TOps ops, TFormat input)
@@ -203,6 +233,15 @@ public static class DynamicOpsExtensions
             : DataResult<int>.Success((int)num.GetOrThrow());
     }
 
+    public static DataResult<uint> GetUInt32<TOps, TFormat>(this TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<uint>.Fail(num.ErrorMessage)
+            : DataResult<uint>.Success((uint)num.GetOrThrow());
+    }
+
     public static DataResult<long> GetInt64<TOps, TFormat>(this TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
@@ -210,6 +249,15 @@ public static class DynamicOpsExtensions
         return num.IsError
             ? DataResult<long>.Fail(num.ErrorMessage)
             : DataResult<long>.Success((long)num.GetOrThrow());
+    }
+
+    public static DataResult<ulong> GetUInt64<TOps, TFormat>(this TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var num = ops.GetNumber(input);
+        return num.IsError
+            ? DataResult<ulong>.Fail(num.ErrorMessage)
+            : DataResult<ulong>.Success((ulong)num.GetOrThrow());
     }
 
     public static DataResult<float> GetFloat<TOps, TFormat>(this TOps ops, TFormat input)

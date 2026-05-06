@@ -21,6 +21,25 @@ internal class Int32Codec : ICodec<int>
     }
 }
 
+internal class UInt32Codec : ICodec<uint>
+{
+    public DataResult<(uint, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var i32 = ops.GetUInt32(input);
+        if (i32.IsError)
+            return DataResult<(uint, TFormat)>.Fail(i32.ErrorMessage);
+
+        return DataResult<(uint, TFormat)>.Success((i32.GetOrThrow(), input));
+    }
+
+    public DataResult<TFormat> Encode<TOps, TFormat>(uint input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+    {
+        return DataResult<TFormat>.Success(ops.CreateUInt32<TOps, TFormat>(input));
+    }
+}
+
 internal class Int64Codec : ICodec<long>
 {
     public DataResult<(long, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
@@ -37,6 +56,25 @@ internal class Int64Codec : ICodec<long>
         where TOps : IDynamicOps<TFormat>
     {
         return DataResult<TFormat>.Success(ops.CreateInt64<TOps, TFormat>(input));
+    }
+}
+
+internal class UInt64Codec : ICodec<ulong>
+{
+    public DataResult<(ulong, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var i64 = ops.GetUInt64(input);
+        if (i64.IsError)
+            return DataResult<(ulong, TFormat)>.Fail(i64.ErrorMessage);
+
+        return DataResult<(ulong, TFormat)>.Success((i64.GetOrThrow(), input));
+    }
+
+    public DataResult<TFormat> Encode<TOps, TFormat>(ulong input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+    {
+        return DataResult<TFormat>.Success(ops.CreateUInt64<TOps, TFormat>(input));
     }
 }
 
@@ -135,6 +173,25 @@ internal class Int8Codec : ICodec<sbyte>
     }
 }
 
+internal class UInt8Codec : ICodec<byte>
+{
+    public DataResult<(byte, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var i8 = ops.GetUInt8(input);
+        if (i8.IsError)
+            return DataResult<(byte, TFormat)>.Fail(i8.ErrorMessage);
+
+        return DataResult<(byte, TFormat)>.Success((i8.GetOrThrow(), input));
+    }
+
+    public DataResult<TFormat> Encode<TOps, TFormat>(byte input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+    {
+        return DataResult<TFormat>.Success(ops.CreateUInt8<TOps, TFormat>(input));
+    }
+}
+
 internal class Int16Codec : ICodec<short>
 {
     public DataResult<(short, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
@@ -151,5 +208,24 @@ internal class Int16Codec : ICodec<short>
         where TOps : IDynamicOps<TFormat>
     {
         return DataResult<TFormat>.Success(ops.CreateInt16<TOps, TFormat>(input));
+    }
+}
+
+internal class UInt16Codec : ICodec<ushort>
+{
+    public DataResult<(ushort, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+        where TOps : IDynamicOps<TFormat>
+    {
+        var i16 = ops.GetUInt16(input);
+        if (i16.IsError)
+            return DataResult<(ushort, TFormat)>.Fail(i16.ErrorMessage);
+
+        return DataResult<(ushort, TFormat)>.Success((i16.GetOrThrow(), input));
+    }
+
+    public DataResult<TFormat> Encode<TOps, TFormat>(ushort input, TOps ops, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+    {
+        return DataResult<TFormat>.Success(ops.CreateUInt16<TOps, TFormat>(input));
     }
 }
