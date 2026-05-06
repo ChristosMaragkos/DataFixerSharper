@@ -1,3 +1,4 @@
+using WhiteTowerGames.DataFixerSharper.Abstractions;
 using WhiteTowerGames.DataFixerSharper.Datafixers;
 using WhiteTowerGames.DataFixerSharper.Json;
 using WhiteTowerGames.DataFixerSharper.Schemas;
@@ -10,6 +11,29 @@ public class Migration
     private static readonly JsonOps JsonOps = JsonOps.Instance;
 
     [Fact]
+    public void Dynamic_AddsFieldCorrectly()
+    {
+        var buf = JsonOps.CreateEmptyMap();
+        buf = JsonOps.FinalizeMap(buf);
+
+        var emptyMap = JsonOps.CreateEmptyMap();
+        emptyMap = JsonOps.FinalizeMap(emptyMap);
+
+        var dyn = new Dynamic<JsonByteBuffer>(JsonOps, buf)
+            .Set("stats", emptyMap)
+            .Get("stats")
+            .Set("mana", JsonOps.CreateNumeric(10));
+
+        var manaResult = dyn.Get("stats").Get("mana");
+
+        Assert.False(manaResult.IsError, manaResult.ErrorMessage);
+
+        var mana = JsonOps.GetInt32(manaResult.GetOrThrow().Value).GetOrElse(0);
+
+        Assert.Equal(10, mana);
+    }
+
+    [Fact]
     public void Engine_RecordMigration_RenamesFieldCorrectly()
     {
         var engine = new DataFixEngine<JsonByteBuffer>(JsonOps);
@@ -18,7 +42,7 @@ public class Migration
             new Dictionary<string, ISchemaType> { { "hp", BuiltinSchemas.Number } }
         );
 
-        Func<Dynamic<JsonByteBuffer>, DynamicResult<JsonByteBuffer>> rule = dyn =>
+        static DynamicResult<JsonByteBuffer> rule(Dynamic<JsonByteBuffer> dyn) =>
             dyn.Rename("hp", "health");
 
         var fixV1_1 = new SchemaDrivenFix<JsonByteBuffer>(new Version(1, 1), playerSchema, rule);
@@ -74,7 +98,7 @@ public class Migration
 
                 var health = JsonOps.GetNumber(healthDyn.GetOrThrow().Value).GetOrThrow();
                 var newHealth = JsonOps.CreateNumeric(health * 2);
-                return dyn.Set("health", new Dynamic<JsonByteBuffer>(JsonOps, newHealth));
+                return dyn.Set("health", newHealth);
             })
             .EndVersion()
             .Build<Player>();
