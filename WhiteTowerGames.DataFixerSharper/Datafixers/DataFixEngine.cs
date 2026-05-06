@@ -41,7 +41,7 @@ public sealed class DataFixEngine<TFormat>
         var migrating = new Dynamic<TFormat>(_ops, data);
         foreach (var (version, fixes) in typeFixes)
         {
-            if (version < fromVersion)
+            if (version <= fromVersion)
                 continue;
 
             if (version > toVersion)
