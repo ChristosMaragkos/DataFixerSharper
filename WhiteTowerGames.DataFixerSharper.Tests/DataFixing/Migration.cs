@@ -90,12 +90,10 @@ public class Migration
             .GetOrThrow();
         v1Data = JsonOps.FinalizeMap(v1Data);
 
-        Console.WriteLine(v1Data.ToJsonString());
         var result = engine.Migrate<Player>(new Version(1, 0, 0), new Version(1, 2, 0), v1Data);
 
         Assert.False(result.IsError, $"Migration Failed: {result.ErrorMessage}");
         var migrated = result.GetOrThrow();
-        Console.WriteLine(migrated.ToJsonString());
 
         Assert.True(JsonOps.GetValue(migrated, "hp").IsError, "Old field 'hp' was not removed");
         Assert.True(JsonOps.GetValue(migrated, "name").IsError, "Old field 'name' was not removed");
