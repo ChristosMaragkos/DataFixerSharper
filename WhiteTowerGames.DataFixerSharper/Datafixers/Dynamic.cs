@@ -7,10 +7,24 @@ public readonly struct Dynamic<TFormat>
     public readonly IDynamicOps<TFormat> Ops;
     public readonly TFormat Value;
 
+    private readonly Func<TFormat, DynamicResult<TFormat>>? _rebuilder;
+
     public Dynamic(IDynamicOps<TFormat> ops, TFormat value)
     {
         Ops = ops;
         Value = value;
+        _rebuilder = null;
+    }
+
+    internal Dynamic(
+        IDynamicOps<TFormat> ops,
+        TFormat value,
+        Func<TFormat, DynamicResult<TFormat>> rebuilder
+    )
+    {
+        Ops = ops;
+        Value = value;
+        _rebuilder = rebuilder;
     }
 
     public DynamicResult<TFormat> Get(string key)
@@ -19,7 +33,11 @@ public readonly struct Dynamic<TFormat>
         if (result.IsError)
             return DataResult<Dynamic<TFormat>>.Fail(result.ErrorMessage);
 
-        return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, result.GetOrThrow()));
+        var self = this;
+
+        return DataResult<Dynamic<TFormat>>.Success(
+            new Dynamic<TFormat>(Ops, result.GetOrThrow(), child => self.Set(key, child))
+        );
     }
 
     public DynamicResult<TFormat> Set(string targetKey, TFormat newValue)
@@ -51,6 +69,13 @@ public readonly struct Dynamic<TFormat>
         }
 
         state.Map = Ops.FinalizeMap(state.Map);
+
+        var newFormat = state.Map;
+        if (_rebuilder is not null)
+        {
+            return _rebuilder(newFormat);
+        }
+
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
@@ -74,6 +99,13 @@ public readonly struct Dynamic<TFormat>
             return DataResult<Dynamic<TFormat>>.Success(this);
 
         state.Map = Ops.FinalizeMap(state.Map);
+
+        var newFormat = state.Map;
+        if (_rebuilder is not null)
+        {
+            return _rebuilder(newFormat);
+        }
+
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
@@ -97,6 +129,13 @@ public readonly struct Dynamic<TFormat>
             return DataResult<Dynamic<TFormat>>.Success(this); // no key found, no problem
 
         state.Map = Ops.FinalizeMap(state.Map);
+
+        var newFormat = state.Map;
+        if (_rebuilder is not null)
+        {
+            return _rebuilder(newFormat);
+        }
+
         return DataResult<Dynamic<TFormat>>.Success(new Dynamic<TFormat>(Ops, state.Map));
     }
 
