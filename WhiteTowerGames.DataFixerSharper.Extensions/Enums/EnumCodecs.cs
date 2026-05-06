@@ -43,6 +43,35 @@ public static class EnumCodecs
         );
     }
 
+    public static ICodec<TEnum> StrictFlagsByValue<TEnum>()
+        where TEnum : struct, Enum
+    {
+        if (!EnumCache<TEnum>.IsFlags)
+            throw new InvalidOperationException(
+                $"{typeof(TEnum).Name} must be an enum annotated with [Flags]"
+            );
+
+        ulong validBitsMask = 0;
+        foreach (var val in EnumCache<TEnum>.Values)
+        {
+            validBitsMask |= EnumCache<TEnum>.ToUInt64(val);
+        }
+
+        return BuiltinCodecs.UInt64.Unsafe2SafeMap(
+            from: EnumCache<TEnum>.ToUInt64,
+            to: numeric =>
+            {
+                if ((numeric & ~validBitsMask) != 0)
+                {
+                    return DataResult<TEnum>.Fail(
+                        $"Numeric value {numeric} contains invalid bits for flag enum {typeof(TEnum).Name}."
+                    );
+                }
+                return DataResult<TEnum>.Success(EnumCache<TEnum>.FromUInt64(numeric));
+            }
+        );
+    }
+
     public static ICodec<TEnum> FlagsByName<TEnum>()
         where TEnum : struct, Enum
     {
