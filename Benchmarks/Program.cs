@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Running;
@@ -13,24 +12,49 @@ namespace Benchmarks;
 [MemoryDiagnoser]
 public class CodecBenchmarks
 {
-    private static readonly Person Giannakhs = new Person("John", 10);
+    private static readonly Person Giannakhs = new Person(
+        "John",
+        ["WoW"],
+        "Unemployed",
+        0,
+        "McDonalds",
+        10
+    );
 
     private static readonly JsonOps JsonOps = JsonOps.Instance;
 
-    public sealed record Person(string Name, int Age = 0);
-
-    public sealed record Relationship(Person Person1, Person Person2);
-
-    public sealed record FriendGroup(params Person[] Members);
+    public sealed record Person(
+        string Name,
+        string[] Hobbies,
+        string Job,
+        int NumberOfFriends,
+        string FavoriteFood,
+        int Age = 0
+    );
 
     private static readonly ICodec<Person> PersonCodec = RecordCodecBuilder.Create<Person>(
         instance =>
             instance
                 .WithFields(
                     BuiltinCodecs.String.Field((Person person) => person.Name, "Name"),
+                    BuiltinCodecs
+                        .String.ForArray()
+                        .Field((Person person) => person.Hobbies, "Hobbies"),
+                    BuiltinCodecs.String.Field((Person person) => person.Job, "Job"),
+                    BuiltinCodecs.Int32.Field(
+                        (Person person) => person.NumberOfFriends,
+                        "NumberOfFriends"
+                    ),
+                    BuiltinCodecs.String.Field(
+                        (Person person) => person.FavoriteFood,
+                        "FavoriteFood"
+                    ),
                     BuiltinCodecs.Int32.Field((Person person) => person.Age, "Age")
                 )
-                .WithCtor((name, age) => new Person(name, age))
+                .WithCtor(
+                    (name, hobbies, job, numOfFriends, favFood, age) =>
+                        new Person(name, hobbies, job, numOfFriends, favFood, age)
+                )
     );
 
     private static readonly ICodec<List<int>> IntegerArrayCodec = BuiltinCodecs.Int32.ForList();
@@ -51,7 +75,9 @@ public class CodecBenchmarks
     [Benchmark]
     public void STJ_Deserialize()
     {
-        JsonSerializer.Deserialize<Person>("""{"Name":"John","Age":10}""");
+        JsonSerializer.Deserialize<Person>(
+            """{"Name":"John","Hobbies": ["Wow"], "Job": "Unemployed", "NumberOfFriends":0, "FavoriteFood":"McDonalds","Age":10}"""
+        );
     }
 
     [Benchmark]
@@ -79,7 +105,7 @@ public class CodecBenchmarks
     }
 
     private static readonly JsonByteBuffer MemoryPerson =
-        """{"Name":"John","Age":10}"""u8.ToArray();
+        """{"Name":"John","Hobbies": ["Wow"], "Job": "Unemployed", "NumberOfFriends":0, "FavoriteFood":"McDonalds","Age":10}"""u8.ToArray();
 
     private static readonly JsonByteBuffer MemoryIntegers = "[1,2,3]"u8.ToArray();
 
