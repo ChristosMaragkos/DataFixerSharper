@@ -26,6 +26,9 @@ public interface IFieldCodec<T, TField>
     DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>;
 
+    DataResult<TField> DecodeFromMap<TOps, TFormat>(TOps ops, ref FieldMap<TFormat> map)
+        where TOps : IDynamicOps<TFormat>;
+
     internal static readonly ConcurrentDictionary<(Type, string), object> KeyCache = new();
 }
 
@@ -55,6 +58,15 @@ public readonly struct FieldCodec<T, TField> : IFieldCodec<T, TField>
 
         input = ops.RemoveFromInput(input, _name);
         return DataResult<(TField, TFormat)>.Success((value.GetOrThrow(), input));
+    }
+
+    public DataResult<TField> DecodeFromMap<TOps, TFormat>(TOps ops, ref FieldMap<TFormat> map)
+        where TOps : IDynamicOps<TFormat>
+    {
+        if (!map.TryGet(ops, _name, out var rawValue))
+            return DataResult<TField>.Fail($"Missing required field: '{_name}'");
+
+        return _codec.Parse(ops, rawValue);
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat accumulator)
@@ -117,6 +129,15 @@ public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
 
         input = ops.RemoveFromInput(input, _name);
         return DataResult<(TField, TFormat)>.Success((value.GetOrThrow(), input));
+    }
+
+    public DataResult<TField> DecodeFromMap<TOps, TFormat>(TOps ops, ref FieldMap<TFormat> map)
+        where TOps : IDynamicOps<TFormat>
+    {
+        if (!map.TryGet(ops, _name, out var rawValue))
+            return DataResult<TField>.Success(_defaultValue);
+
+        return _codec.Parse(ops, rawValue);
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat accumulator)

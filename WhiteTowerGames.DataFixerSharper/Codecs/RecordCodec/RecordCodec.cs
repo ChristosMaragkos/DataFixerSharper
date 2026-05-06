@@ -16,27 +16,26 @@ public readonly struct RecordCodec1<T, TF> : ICodec<T>
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var dec0 = _f0.Decode(ops, input);
-        if (dec0.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec0.ErrorMessage);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
 
-        var field0 = dec0.GetOrThrow().Item1;
-        var instance = _factory(field0);
-        var remainder = dec0.GetOrThrow().Item2;
+        var d0 = _f0.DecodeFromMap(ops, ref map);
+        if (d0.IsError)
+            return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
 
-        return DataResult<(T, TFormat)>.Success((instance, remainder));
+        return DataResult<(T, TFormat)>.Success((_factory(d0.GetOrThrow()), input));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
     {
-        var map = ops.CreateEmptyMap();
-        var enc0 = _f0.Encode(input, ops, map);
-        if (enc0.IsError)
-            return enc0;
+        var e0 = _f0.Encode(input, ops, ops.CreateEmptyMap());
+        if (e0.IsError)
+            return e0;
 
-        var finalPrefix = ops.AppendToPrefix(prefix, enc0.GetOrThrow());
-        return DataResult<TFormat>.Success(finalPrefix);
+        return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e0.GetOrThrow()));
     }
 
     public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
@@ -48,7 +47,6 @@ public readonly struct RecordCodec1<T, TF> : ICodec<T>
         var parsed = Decode(ops, input);
         if (parsed.IsError)
             return DataResult<T>.Fail(parsed.ErrorMessage);
-
         return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 }
@@ -69,39 +67,34 @@ public readonly struct RecordCodec2<T, TF, TF1> : ICodec<T>
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var dec0 = _f0.Decode(ops, input);
-        if (dec0.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec0.ErrorMessage);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
 
-        var field0 = dec0.GetOrThrow().Item1;
+        var d0 = _f0.DecodeFromMap(ops, ref map);
+        if (d0.IsError)
+            return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
+        if (d1.IsError)
+            return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
 
-        var dec1 = _f1.Decode(ops, dec0.GetOrThrow().Item2);
-        if (dec1.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec1.ErrorMessage);
-
-        var field1 = dec1.GetOrThrow().Item1;
-
-        var instance = _factory(field0, field1);
-        var remainder = dec1.GetOrThrow().Item2;
-
-        return DataResult<(T, TFormat)>.Success((instance, remainder));
+        return DataResult<(T, TFormat)>.Success(
+            (_factory(d0.GetOrThrow(), d1.GetOrThrow()), input)
+        );
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
     {
-        var map = ops.CreateEmptyMap();
-        var enc0 = _f0.Encode(input, ops, map);
-        if (enc0.IsError)
-            return enc0;
+        var e0 = _f0.Encode(input, ops, ops.CreateEmptyMap());
+        if (e0.IsError)
+            return e0;
+        var e1 = _f1.Encode(input, ops, e0.GetOrThrow());
+        if (e1.IsError)
+            return e1;
 
-        // use (prefix + encoded fields) to accumulate
-        var enc1 = _f1.Encode(input, ops, enc0.GetOrThrow());
-        if (enc1.IsError)
-            return enc1;
-
-        var finalPrefix = ops.AppendToPrefix(prefix, enc1.GetOrThrow());
-        return DataResult<TFormat>.Success(finalPrefix);
+        return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e1.GetOrThrow()));
     }
 
     public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
@@ -113,7 +106,6 @@ public readonly struct RecordCodec2<T, TF, TF1> : ICodec<T>
         var parsed = Decode(ops, input);
         if (parsed.IsError)
             return DataResult<T>.Fail(parsed.ErrorMessage);
-
         return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 }
@@ -141,49 +133,40 @@ public readonly struct RecordCodec3<T, TF, TF1, TF2> : ICodec<T>
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var dec0 = _f0.Decode(ops, input);
-        if (dec0.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec0.ErrorMessage);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
 
-        var field0 = dec0.GetOrThrow().Item1;
+        var d0 = _f0.DecodeFromMap(ops, ref map);
+        if (d0.IsError)
+            return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
+        if (d1.IsError)
+            return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
+        if (d2.IsError)
+            return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
 
-        var dec1 = _f1.Decode(ops, dec0.GetOrThrow().Item2);
-        if (dec1.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec1.ErrorMessage);
-
-        var field1 = dec1.GetOrThrow().Item1;
-
-        var dec2 = _f2.Decode(ops, dec1.GetOrThrow().Item2);
-        if (dec2.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec2.ErrorMessage);
-
-        var field2 = dec2.GetOrThrow().Item1;
-
-        var instance = _factory(field0, field1, field2);
-        var remainder = dec2.GetOrThrow().Item2;
-
-        return DataResult<(T, TFormat)>.Success((instance, remainder));
+        return DataResult<(T, TFormat)>.Success(
+            (_factory(d0.GetOrThrow(), d1.GetOrThrow(), d2.GetOrThrow()), input)
+        );
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
     {
-        var map = ops.CreateEmptyMap();
-        var enc0 = _f0.Encode(input, ops, map);
-        if (enc0.IsError)
-            return enc0;
+        var e0 = _f0.Encode(input, ops, ops.CreateEmptyMap());
+        if (e0.IsError)
+            return e0;
+        var e1 = _f1.Encode(input, ops, e0.GetOrThrow());
+        if (e1.IsError)
+            return e1;
+        var e2 = _f2.Encode(input, ops, e1.GetOrThrow());
+        if (e2.IsError)
+            return e2;
 
-        // use (prefix + encoded fields) to accumulate
-        var enc1 = _f1.Encode(input, ops, enc0.GetOrThrow());
-        if (enc1.IsError)
-            return enc1;
-
-        var enc2 = _f2.Encode(input, ops, enc1.GetOrThrow());
-        if (enc2.IsError)
-            return enc2;
-
-        var finalPrefix = ops.AppendToPrefix(prefix, enc2.GetOrThrow());
-        return DataResult<TFormat>.Success(finalPrefix);
+        return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e2.GetOrThrow()));
     }
 
     public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
@@ -195,7 +178,6 @@ public readonly struct RecordCodec3<T, TF, TF1, TF2> : ICodec<T>
         var parsed = Decode(ops, input);
         if (parsed.IsError)
             return DataResult<T>.Fail(parsed.ErrorMessage);
-
         return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 }
@@ -226,53 +208,46 @@ public readonly struct RecordCodec4<T, TF, TF1, TF2, TF3> : ICodec<T>
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var dec0 = _f0.Decode(ops, input);
-        if (dec0.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec0.ErrorMessage);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
 
-        var dec1 = _f1.Decode(ops, dec0.GetOrThrow().Item2);
-        if (dec1.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec1.ErrorMessage);
+        var d0 = _f0.DecodeFromMap(ops, ref map);
+        if (d0.IsError)
+            return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
+        if (d1.IsError)
+            return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
+        if (d2.IsError)
+            return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
+        var d3 = _f3.DecodeFromMap(ops, ref map);
+        if (d3.IsError)
+            return DataResult<(T, TFormat)>.Fail(d3.ErrorMessage);
 
-        var dec2 = _f2.Decode(ops, dec1.GetOrThrow().Item2);
-        if (dec2.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec2.ErrorMessage);
-
-        var dec3 = _f3.Decode(ops, dec2.GetOrThrow().Item2);
-        if (dec3.IsError)
-            return DataResult<(T, TFormat)>.Fail(dec3.ErrorMessage);
-
-        var instance = _factory(
-            dec0.GetOrThrow().Item1,
-            dec1.GetOrThrow().Item1,
-            dec2.GetOrThrow().Item1,
-            dec3.GetOrThrow().Item1
+        return DataResult<(T, TFormat)>.Success(
+            (_factory(d0.GetOrThrow(), d1.GetOrThrow(), d2.GetOrThrow(), d3.GetOrThrow()), input)
         );
-
-        return DataResult<(T, TFormat)>.Success((instance, dec3.GetOrThrow().Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
     {
-        var map = ops.CreateEmptyMap();
-        var enc0 = _f0.Encode(input, ops, map);
-        if (enc0.IsError)
-            return enc0;
+        var e0 = _f0.Encode(input, ops, ops.CreateEmptyMap());
+        if (e0.IsError)
+            return e0;
+        var e1 = _f1.Encode(input, ops, e0.GetOrThrow());
+        if (e1.IsError)
+            return e1;
+        var e2 = _f2.Encode(input, ops, e1.GetOrThrow());
+        if (e2.IsError)
+            return e2;
+        var e3 = _f3.Encode(input, ops, e2.GetOrThrow());
+        if (e3.IsError)
+            return e3;
 
-        var enc1 = _f1.Encode(input, ops, enc0.GetOrThrow());
-        if (enc1.IsError)
-            return enc1;
-
-        var enc2 = _f2.Encode(input, ops, enc1.GetOrThrow());
-        if (enc2.IsError)
-            return enc2;
-
-        var enc3 = _f3.Encode(input, ops, enc2.GetOrThrow());
-        if (enc3.IsError)
-            return enc3;
-
-        return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, enc3.GetOrThrow()));
+        return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e3.GetOrThrow()));
     }
 
     public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
@@ -317,30 +292,39 @@ public readonly struct RecordCodec5<T, TF, TF1, TF2, TF3, TF4> : ICodec<T>
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var d0 = _f0.Decode(ops, input);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
+
+        var d0 = _f0.DecodeFromMap(ops, ref map);
         if (d0.IsError)
             return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
-        var d1 = _f1.Decode(ops, d0.GetOrThrow().Item2);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
         if (d1.IsError)
             return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
-        var d2 = _f2.Decode(ops, d1.GetOrThrow().Item2);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
         if (d2.IsError)
             return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
-        var d3 = _f3.Decode(ops, d2.GetOrThrow().Item2);
+        var d3 = _f3.DecodeFromMap(ops, ref map);
         if (d3.IsError)
             return DataResult<(T, TFormat)>.Fail(d3.ErrorMessage);
-        var d4 = _f4.Decode(ops, d3.GetOrThrow().Item2);
+        var d4 = _f4.DecodeFromMap(ops, ref map);
         if (d4.IsError)
             return DataResult<(T, TFormat)>.Fail(d4.ErrorMessage);
 
-        var instance = _factory(
-            d0.GetOrThrow().Item1,
-            d1.GetOrThrow().Item1,
-            d2.GetOrThrow().Item1,
-            d3.GetOrThrow().Item1,
-            d4.GetOrThrow().Item1
+        return DataResult<(T, TFormat)>.Success(
+            (
+                _factory(
+                    d0.GetOrThrow(),
+                    d1.GetOrThrow(),
+                    d2.GetOrThrow(),
+                    d3.GetOrThrow(),
+                    d4.GetOrThrow()
+                ),
+                input
+            )
         );
-        return DataResult<(T, TFormat)>.Success((instance, d4.GetOrThrow().Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
@@ -361,6 +345,7 @@ public readonly struct RecordCodec5<T, TF, TF1, TF2, TF3, TF4> : ICodec<T>
         var e4 = _f4.Encode(input, ops, e3.GetOrThrow());
         if (e4.IsError)
             return e4;
+
         return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e4.GetOrThrow()));
     }
 
@@ -409,34 +394,43 @@ public readonly struct RecordCodec6<T, TF, TF1, TF2, TF3, TF4, TF5> : ICodec<T>
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var d0 = _f0.Decode(ops, input);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
+
+        var d0 = _f0.DecodeFromMap(ops, ref map);
         if (d0.IsError)
             return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
-        var d1 = _f1.Decode(ops, d0.GetOrThrow().Item2);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
         if (d1.IsError)
             return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
-        var d2 = _f2.Decode(ops, d1.GetOrThrow().Item2);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
         if (d2.IsError)
             return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
-        var d3 = _f3.Decode(ops, d2.GetOrThrow().Item2);
+        var d3 = _f3.DecodeFromMap(ops, ref map);
         if (d3.IsError)
             return DataResult<(T, TFormat)>.Fail(d3.ErrorMessage);
-        var d4 = _f4.Decode(ops, d3.GetOrThrow().Item2);
+        var d4 = _f4.DecodeFromMap(ops, ref map);
         if (d4.IsError)
             return DataResult<(T, TFormat)>.Fail(d4.ErrorMessage);
-        var d5 = _f5.Decode(ops, d4.GetOrThrow().Item2);
+        var d5 = _f5.DecodeFromMap(ops, ref map);
         if (d5.IsError)
             return DataResult<(T, TFormat)>.Fail(d5.ErrorMessage);
 
-        var instance = _factory(
-            d0.GetOrThrow().Item1,
-            d1.GetOrThrow().Item1,
-            d2.GetOrThrow().Item1,
-            d3.GetOrThrow().Item1,
-            d4.GetOrThrow().Item1,
-            d5.GetOrThrow().Item1
+        return DataResult<(T, TFormat)>.Success(
+            (
+                _factory(
+                    d0.GetOrThrow(),
+                    d1.GetOrThrow(),
+                    d2.GetOrThrow(),
+                    d3.GetOrThrow(),
+                    d4.GetOrThrow(),
+                    d5.GetOrThrow()
+                ),
+                input
+            )
         );
-        return DataResult<(T, TFormat)>.Success((instance, d5.GetOrThrow().Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
@@ -460,6 +454,7 @@ public readonly struct RecordCodec6<T, TF, TF1, TF2, TF3, TF4, TF5> : ICodec<T>
         var e5 = _f5.Encode(input, ops, e4.GetOrThrow());
         if (e5.IsError)
             return e5;
+
         return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e5.GetOrThrow()));
     }
 
@@ -511,38 +506,47 @@ public readonly struct RecordCodec7<T, TF, TF1, TF2, TF3, TF4, TF5, TF6> : ICode
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var d0 = _f0.Decode(ops, input);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
+
+        var d0 = _f0.DecodeFromMap(ops, ref map);
         if (d0.IsError)
             return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
-        var d1 = _f1.Decode(ops, d0.GetOrThrow().Item2);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
         if (d1.IsError)
             return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
-        var d2 = _f2.Decode(ops, d1.GetOrThrow().Item2);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
         if (d2.IsError)
             return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
-        var d3 = _f3.Decode(ops, d2.GetOrThrow().Item2);
+        var d3 = _f3.DecodeFromMap(ops, ref map);
         if (d3.IsError)
             return DataResult<(T, TFormat)>.Fail(d3.ErrorMessage);
-        var d4 = _f4.Decode(ops, d3.GetOrThrow().Item2);
+        var d4 = _f4.DecodeFromMap(ops, ref map);
         if (d4.IsError)
             return DataResult<(T, TFormat)>.Fail(d4.ErrorMessage);
-        var d5 = _f5.Decode(ops, d4.GetOrThrow().Item2);
+        var d5 = _f5.DecodeFromMap(ops, ref map);
         if (d5.IsError)
             return DataResult<(T, TFormat)>.Fail(d5.ErrorMessage);
-        var d6 = _f6.Decode(ops, d5.GetOrThrow().Item2);
+        var d6 = _f6.DecodeFromMap(ops, ref map);
         if (d6.IsError)
             return DataResult<(T, TFormat)>.Fail(d6.ErrorMessage);
 
-        var instance = _factory(
-            d0.GetOrThrow().Item1,
-            d1.GetOrThrow().Item1,
-            d2.GetOrThrow().Item1,
-            d3.GetOrThrow().Item1,
-            d4.GetOrThrow().Item1,
-            d5.GetOrThrow().Item1,
-            d6.GetOrThrow().Item1
+        return DataResult<(T, TFormat)>.Success(
+            (
+                _factory(
+                    d0.GetOrThrow(),
+                    d1.GetOrThrow(),
+                    d2.GetOrThrow(),
+                    d3.GetOrThrow(),
+                    d4.GetOrThrow(),
+                    d5.GetOrThrow(),
+                    d6.GetOrThrow()
+                ),
+                input
+            )
         );
-        return DataResult<(T, TFormat)>.Success((instance, d6.GetOrThrow().Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
@@ -569,6 +573,7 @@ public readonly struct RecordCodec7<T, TF, TF1, TF2, TF3, TF4, TF5, TF6> : ICode
         var e6 = _f6.Encode(input, ops, e5.GetOrThrow());
         if (e6.IsError)
             return e6;
+
         return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e6.GetOrThrow()));
     }
 
@@ -623,42 +628,51 @@ public readonly struct RecordCodec8<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7> : 
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var d0 = _f0.Decode(ops, input);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
+
+        var d0 = _f0.DecodeFromMap(ops, ref map);
         if (d0.IsError)
             return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
-        var d1 = _f1.Decode(ops, d0.GetOrThrow().Item2);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
         if (d1.IsError)
             return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
-        var d2 = _f2.Decode(ops, d1.GetOrThrow().Item2);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
         if (d2.IsError)
             return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
-        var d3 = _f3.Decode(ops, d2.GetOrThrow().Item2);
+        var d3 = _f3.DecodeFromMap(ops, ref map);
         if (d3.IsError)
             return DataResult<(T, TFormat)>.Fail(d3.ErrorMessage);
-        var d4 = _f4.Decode(ops, d3.GetOrThrow().Item2);
+        var d4 = _f4.DecodeFromMap(ops, ref map);
         if (d4.IsError)
             return DataResult<(T, TFormat)>.Fail(d4.ErrorMessage);
-        var d5 = _f5.Decode(ops, d4.GetOrThrow().Item2);
+        var d5 = _f5.DecodeFromMap(ops, ref map);
         if (d5.IsError)
             return DataResult<(T, TFormat)>.Fail(d5.ErrorMessage);
-        var d6 = _f6.Decode(ops, d5.GetOrThrow().Item2);
+        var d6 = _f6.DecodeFromMap(ops, ref map);
         if (d6.IsError)
             return DataResult<(T, TFormat)>.Fail(d6.ErrorMessage);
-        var d7 = _f7.Decode(ops, d6.GetOrThrow().Item2);
+        var d7 = _f7.DecodeFromMap(ops, ref map);
         if (d7.IsError)
             return DataResult<(T, TFormat)>.Fail(d7.ErrorMessage);
 
-        var instance = _factory(
-            d0.GetOrThrow().Item1,
-            d1.GetOrThrow().Item1,
-            d2.GetOrThrow().Item1,
-            d3.GetOrThrow().Item1,
-            d4.GetOrThrow().Item1,
-            d5.GetOrThrow().Item1,
-            d6.GetOrThrow().Item1,
-            d7.GetOrThrow().Item1
+        return DataResult<(T, TFormat)>.Success(
+            (
+                _factory(
+                    d0.GetOrThrow(),
+                    d1.GetOrThrow(),
+                    d2.GetOrThrow(),
+                    d3.GetOrThrow(),
+                    d4.GetOrThrow(),
+                    d5.GetOrThrow(),
+                    d6.GetOrThrow(),
+                    d7.GetOrThrow()
+                ),
+                input
+            )
         );
-        return DataResult<(T, TFormat)>.Success((instance, d7.GetOrThrow().Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
@@ -688,6 +702,7 @@ public readonly struct RecordCodec8<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7> : 
         var e7 = _f7.Encode(input, ops, e6.GetOrThrow());
         if (e7.IsError)
             return e7;
+
         return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e7.GetOrThrow()));
     }
 
@@ -745,46 +760,55 @@ public readonly struct RecordCodec9<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7, TF
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var d0 = _f0.Decode(ops, input);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
+
+        var d0 = _f0.DecodeFromMap(ops, ref map);
         if (d0.IsError)
             return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
-        var d1 = _f1.Decode(ops, d0.GetOrThrow().Item2);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
         if (d1.IsError)
             return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
-        var d2 = _f2.Decode(ops, d1.GetOrThrow().Item2);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
         if (d2.IsError)
             return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
-        var d3 = _f3.Decode(ops, d2.GetOrThrow().Item2);
+        var d3 = _f3.DecodeFromMap(ops, ref map);
         if (d3.IsError)
             return DataResult<(T, TFormat)>.Fail(d3.ErrorMessage);
-        var d4 = _f4.Decode(ops, d3.GetOrThrow().Item2);
+        var d4 = _f4.DecodeFromMap(ops, ref map);
         if (d4.IsError)
             return DataResult<(T, TFormat)>.Fail(d4.ErrorMessage);
-        var d5 = _f5.Decode(ops, d4.GetOrThrow().Item2);
+        var d5 = _f5.DecodeFromMap(ops, ref map);
         if (d5.IsError)
             return DataResult<(T, TFormat)>.Fail(d5.ErrorMessage);
-        var d6 = _f6.Decode(ops, d5.GetOrThrow().Item2);
+        var d6 = _f6.DecodeFromMap(ops, ref map);
         if (d6.IsError)
             return DataResult<(T, TFormat)>.Fail(d6.ErrorMessage);
-        var d7 = _f7.Decode(ops, d6.GetOrThrow().Item2);
+        var d7 = _f7.DecodeFromMap(ops, ref map);
         if (d7.IsError)
             return DataResult<(T, TFormat)>.Fail(d7.ErrorMessage);
-        var d8 = _f8.Decode(ops, d7.GetOrThrow().Item2);
+        var d8 = _f8.DecodeFromMap(ops, ref map);
         if (d8.IsError)
             return DataResult<(T, TFormat)>.Fail(d8.ErrorMessage);
 
-        var instance = _factory(
-            d0.GetOrThrow().Item1,
-            d1.GetOrThrow().Item1,
-            d2.GetOrThrow().Item1,
-            d3.GetOrThrow().Item1,
-            d4.GetOrThrow().Item1,
-            d5.GetOrThrow().Item1,
-            d6.GetOrThrow().Item1,
-            d7.GetOrThrow().Item1,
-            d8.GetOrThrow().Item1
+        return DataResult<(T, TFormat)>.Success(
+            (
+                _factory(
+                    d0.GetOrThrow(),
+                    d1.GetOrThrow(),
+                    d2.GetOrThrow(),
+                    d3.GetOrThrow(),
+                    d4.GetOrThrow(),
+                    d5.GetOrThrow(),
+                    d6.GetOrThrow(),
+                    d7.GetOrThrow(),
+                    d8.GetOrThrow()
+                ),
+                input
+            )
         );
-        return DataResult<(T, TFormat)>.Success((instance, d8.GetOrThrow().Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
@@ -817,6 +841,7 @@ public readonly struct RecordCodec9<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7, TF
         var e8 = _f8.Encode(input, ops, e7.GetOrThrow());
         if (e8.IsError)
             return e8;
+
         return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e8.GetOrThrow()));
     }
 
@@ -877,50 +902,59 @@ public readonly struct RecordCodec10<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7, T
     public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
         where TOps : IDynamicOps<TFormat>
     {
-        var d0 = _f0.Decode(ops, input);
+        var map = new FieldMap<TFormat>();
+        var readResult = ops.ReadMap(input, ref map, new FieldMapConsumer<TOps, TFormat>());
+        if (readResult.IsError)
+            return DataResult<(T, TFormat)>.Fail(readResult.ErrorMessage);
+
+        var d0 = _f0.DecodeFromMap(ops, ref map);
         if (d0.IsError)
             return DataResult<(T, TFormat)>.Fail(d0.ErrorMessage);
-        var d1 = _f1.Decode(ops, d0.GetOrThrow().Item2);
+        var d1 = _f1.DecodeFromMap(ops, ref map);
         if (d1.IsError)
             return DataResult<(T, TFormat)>.Fail(d1.ErrorMessage);
-        var d2 = _f2.Decode(ops, d1.GetOrThrow().Item2);
+        var d2 = _f2.DecodeFromMap(ops, ref map);
         if (d2.IsError)
             return DataResult<(T, TFormat)>.Fail(d2.ErrorMessage);
-        var d3 = _f3.Decode(ops, d2.GetOrThrow().Item2);
+        var d3 = _f3.DecodeFromMap(ops, ref map);
         if (d3.IsError)
             return DataResult<(T, TFormat)>.Fail(d3.ErrorMessage);
-        var d4 = _f4.Decode(ops, d3.GetOrThrow().Item2);
+        var d4 = _f4.DecodeFromMap(ops, ref map);
         if (d4.IsError)
             return DataResult<(T, TFormat)>.Fail(d4.ErrorMessage);
-        var d5 = _f5.Decode(ops, d4.GetOrThrow().Item2);
+        var d5 = _f5.DecodeFromMap(ops, ref map);
         if (d5.IsError)
             return DataResult<(T, TFormat)>.Fail(d5.ErrorMessage);
-        var d6 = _f6.Decode(ops, d5.GetOrThrow().Item2);
+        var d6 = _f6.DecodeFromMap(ops, ref map);
         if (d6.IsError)
             return DataResult<(T, TFormat)>.Fail(d6.ErrorMessage);
-        var d7 = _f7.Decode(ops, d6.GetOrThrow().Item2);
+        var d7 = _f7.DecodeFromMap(ops, ref map);
         if (d7.IsError)
             return DataResult<(T, TFormat)>.Fail(d7.ErrorMessage);
-        var d8 = _f8.Decode(ops, d7.GetOrThrow().Item2);
+        var d8 = _f8.DecodeFromMap(ops, ref map);
         if (d8.IsError)
             return DataResult<(T, TFormat)>.Fail(d8.ErrorMessage);
-        var d9 = _f9.Decode(ops, d8.GetOrThrow().Item2);
+        var d9 = _f9.DecodeFromMap(ops, ref map);
         if (d9.IsError)
             return DataResult<(T, TFormat)>.Fail(d9.ErrorMessage);
 
-        var instance = _factory(
-            d0.GetOrThrow().Item1,
-            d1.GetOrThrow().Item1,
-            d2.GetOrThrow().Item1,
-            d3.GetOrThrow().Item1,
-            d4.GetOrThrow().Item1,
-            d5.GetOrThrow().Item1,
-            d6.GetOrThrow().Item1,
-            d7.GetOrThrow().Item1,
-            d8.GetOrThrow().Item1,
-            d9.GetOrThrow().Item1
+        return DataResult<(T, TFormat)>.Success(
+            (
+                _factory(
+                    d0.GetOrThrow(),
+                    d1.GetOrThrow(),
+                    d2.GetOrThrow(),
+                    d3.GetOrThrow(),
+                    d4.GetOrThrow(),
+                    d5.GetOrThrow(),
+                    d6.GetOrThrow(),
+                    d7.GetOrThrow(),
+                    d8.GetOrThrow(),
+                    d9.GetOrThrow()
+                ),
+                input
+            )
         );
-        return DataResult<(T, TFormat)>.Success((instance, d9.GetOrThrow().Item2));
     }
 
     public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
@@ -956,6 +990,7 @@ public readonly struct RecordCodec10<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7, T
         var e9 = _f9.Encode(input, ops, e8.GetOrThrow());
         if (e9.IsError)
             return e9;
+
         return DataResult<TFormat>.Success(ops.AppendToPrefix(prefix, e9.GetOrThrow()));
     }
 
