@@ -15,7 +15,7 @@ public class Mappers
         // Given
         ICodec<Vector3> codec = BuiltinCodecs
             .Float.ForArray()
-            .Unsafe2SafeMap<Vector3>(
+            .Unsafe2SafeMap(
                 vec => new float[] { vec.X, vec.Y, vec.Z },
                 arr =>
                     arr.Length != 3
@@ -44,7 +44,7 @@ public class Mappers
         // Given
         ICodec<Vector3> vectorCodec = BuiltinCodecs
             .Float.ForArray()
-            .Unsafe2SafeMap<Vector3>(
+            .Unsafe2SafeMap(
                 vec => new float[] { vec.X, vec.Y, vec.Z },
                 arr =>
                     arr.Length != 3
@@ -71,7 +71,7 @@ public class Mappers
         // Given
         ICodec<Vector3> vectorCodec = BuiltinCodecs
             .Float.ForArray()
-            .Unsafe2SafeMap<Vector3>(
+            .Unsafe2SafeMap(
                 vec => new float[] { vec.X, vec.Y, vec.Z },
                 arr =>
                     arr.Length != 3

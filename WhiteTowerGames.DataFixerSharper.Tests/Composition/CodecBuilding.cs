@@ -112,10 +112,7 @@ public class CodecBuilding
 
         // When
         var encoded = FriendGroupCodec.Encode(group, JsonOps, JsonOps.Empty());
-        var decoded = FriendGroupCodec.Parse<JsonOps, JsonByteBuffer>(
-            JsonOps,
-            encoded.GetOrThrow()
-        );
+        var decoded = FriendGroupCodec.Parse(JsonOps, encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);

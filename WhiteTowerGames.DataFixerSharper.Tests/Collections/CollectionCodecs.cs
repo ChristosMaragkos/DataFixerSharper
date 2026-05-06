@@ -57,7 +57,7 @@ public class CollectionCodecs
     {
         // Given
         var dict = new Dictionary<string, int>() { { "zero", 0 }, { "one", 1 } };
-        var codec = ICodec.Dictionary<string, int>(BuiltinCodecs.String, BuiltinCodecs.Int32);
+        var codec = ICodec.Dictionary(BuiltinCodecs.String, BuiltinCodecs.Int32);
 
         // When
         var encoded = codec.Encode(dict, JsonOps, JsonOps.Empty());

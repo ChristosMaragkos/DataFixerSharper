@@ -31,7 +31,7 @@ internal readonly struct DispatchCodec<TBase, TDis> : ICodec<TBase>
                 $"Input was missing polymorphic type discriminator named {_discriminatorKeyName} - [{typeResult.ErrorMessage}]"
             );
 
-        var discrResult = _discriminatorCodec.Parse<TOps, TFormat>(ops, typeResult.GetOrThrow());
+        var discrResult = _discriminatorCodec.Parse(ops, typeResult.GetOrThrow());
         if (discrResult.IsError)
             return DataResult<(TBase, TFormat)>.Fail(
                 $"Failed to decode type discriminator: [{discrResult.ErrorMessage}]"

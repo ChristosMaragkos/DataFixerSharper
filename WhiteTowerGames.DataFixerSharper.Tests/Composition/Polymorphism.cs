@@ -46,10 +46,10 @@ public class Polymorphism
                 .WithCtor((width, height) => new Rectangle(width, height))
     );
 
-    private static readonly ICodec<Shape> ShapeDispatch = ICodec.Dispatch<Shape, string>(
+    private static readonly ICodec<Shape> ShapeDispatch = ICodec.Dispatch(
         BuiltinCodecs.String,
         shape => shape.Type(),
-        discr => CodecByType(discr)
+        CodecByType
     );
 
     private static ICodec<Shape> CodecByType(string discriminator)
@@ -68,7 +68,7 @@ public class Polymorphism
     {
         // Given, When
         var encoded = ShapeDispatch.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, shape);
-        var decoded = ShapeDispatch.Parse<JsonOps, JsonByteBuffer>(JsonOps, encoded.GetOrThrow());
+        var decoded = ShapeDispatch.Parse(JsonOps, encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
