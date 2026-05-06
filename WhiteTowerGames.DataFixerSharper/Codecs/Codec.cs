@@ -58,6 +58,9 @@ public interface ICodec<T> : ICodec
     public ICodec<T[]> ForArray() =>
         ForList().SafeMap<T[]>(array => array.ToList(), list => list.ToArray());
 
+    public ICodec<T> Conditional(Predicate<T> condition) =>
+        new ConditionalCodec<T>(this, condition);
+
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T <-> TOther always valid.
     public ICodec<TOther> SafeMap<TOther>(Func<TOther, T> from, Func<T, TOther> to) =>
         new SafeMapCodec<T, TOther>(this, to, from);
