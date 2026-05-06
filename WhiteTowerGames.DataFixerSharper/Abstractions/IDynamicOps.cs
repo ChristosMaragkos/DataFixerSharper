@@ -143,16 +143,26 @@ public interface IDynamicOps<TFormat>
     /// Not strictly necessary to be implemented unless your backing format requires removing fields as they are being processed.
     /// </remarks>
     TFormat RemoveFromInput(TFormat input, string valueKey);
+
+    /// <summary>
+    /// Checks if the given <paramref name="key"/> matches the <paramref name="targetKey"/>.
+    /// </summary>
+    /// <remarks>
+    /// This method should generally not allocate on the heap unless necessary
+    /// to prevent <see cref="StackOverflowException"/>.
+    /// <see langword="stackalloc"/> is your friend.
+    /// </remarks>
+    bool MapKeysMatch(TFormat key, string targetKey);
     #endregion
 }
 
 public static class DynamicOpsExtensions
 {
     public static TFormat CreateInt8<TOps, TFormat>(this TOps ops, sbyte value)
-        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric((decimal)value);
+        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
 
     public static TFormat CreateInt16<TOps, TFormat>(this TOps ops, short value)
-        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric((decimal)value);
+        where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);
 
     public static TFormat CreateInt32<TOps, TFormat>(this TOps ops, int value)
         where TOps : IDynamicOps<TFormat> => ops.CreateNumeric(value);

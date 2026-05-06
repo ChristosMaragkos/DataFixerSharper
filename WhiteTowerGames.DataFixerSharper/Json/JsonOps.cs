@@ -1,4 +1,5 @@
 using System.Buffers.Text;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
@@ -382,6 +383,23 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         leftValues.CopyTo(merged.AsSpan(1));
         rightValues.CopyTo(merged.AsSpan(leftValues.Length + 2));
         return new JsonByteBuffer(merged);
+    }
+
+    public bool MapKeysMatch(JsonByteBuffer key, string targetKey)
+    {
+        var span = key.Memory.Span;
+
+        if (span.Length >= 2 && span[0] == (byte)'"' && span[^1] == (byte)'"')
+        {
+            span = span[1..^1];
+        }
+
+        var byteAmount = Encoding.UTF8.GetMaxByteCount(targetKey.Length);
+        Span<byte> buffer = byteAmount <= 512 ? stackalloc byte[byteAmount] : new byte[byteAmount];
+
+        var actualBytes = Encoding.UTF8.GetBytes(targetKey, buffer);
+
+        return span.SequenceEqual(buffer[0..actualBytes]);
     }
     #endregion
 }
