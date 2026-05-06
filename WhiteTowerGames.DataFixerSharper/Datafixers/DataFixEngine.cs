@@ -9,7 +9,7 @@ public sealed class DataFixEngine<TFormat>
     private readonly Dictionary<
         Type,
         SortedDictionary<Version, List<IDataFix<TFormat>>>
-    > _timelines = new();
+    > _timelines = [];
 
     public DataFixEngine(IDynamicOps<TFormat> ops)
     {
@@ -21,12 +21,12 @@ public sealed class DataFixEngine<TFormat>
         var objectType = typeof(TObj);
 
         if (!_timelines.ContainsKey(objectType))
-            _timelines[objectType] = new();
+            _timelines[objectType] = [];
 
         foreach (var fix in timeline.Fixes)
         {
             if (!_timelines[objectType].ContainsKey(fix.Since))
-                _timelines[objectType][fix.Since] = new();
+                _timelines[objectType][fix.Since] = [];
 
             _timelines[objectType][fix.Since].Add(fix);
         }
