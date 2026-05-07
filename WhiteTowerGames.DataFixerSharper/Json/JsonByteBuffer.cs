@@ -4,6 +4,11 @@ using System.Text.Json.Nodes;
 
 namespace WhiteTowerGames.DataFixerSharper.Json;
 
+/// <summary>
+/// Lightweight container for JSON-encoded objects.
+/// It should be noted that this struct does not hold an actual string (use <see cref="ToJsonString"/> for that)
+/// but rather a view into UTF-8 encoded JSON text in-memory.
+/// </summary>
 public readonly struct JsonByteBuffer
 {
     public readonly ReadOnlyMemory<byte> Memory; // If we are decoding, this holds the data

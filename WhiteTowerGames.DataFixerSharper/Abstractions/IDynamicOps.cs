@@ -152,7 +152,7 @@ public interface IDynamicOps<TFormat>
     /// to prevent <see cref="StackOverflowException"/>.
     /// <see langword="stackalloc"/> is your friend.
     /// </remarks>
-    bool MapKeysMatch(TFormat key, string targetKey);
+    bool StringsMatch(TFormat key, string targetKey);
     #endregion
 }
 

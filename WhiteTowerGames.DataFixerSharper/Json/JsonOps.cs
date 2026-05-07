@@ -54,6 +54,13 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #region Value Creation
     public JsonByteBuffer Empty() => EmptyValue;
 
+    // FIXME: This allocates way too eagerly.
+    // It shoves a byte array on the heap for every integer we encode.
+    // Let's do the math for a 12-int array:
+    // 12 integers at - let's say on average - 3 bytes per integer (because we're working with 3 digits)
+    // is 36 bytes. If you pad each of those to 8 bytes (which the GC does), we're sitting at about 100 bytes.
+    // But each one of those 12 arrays also carries an object header which from my research is shown to be about
+    // 24 bytes. 24 * 12 = 288 bytes, which brings us to about 400 bytes total.
     public JsonByteBuffer CreateNumeric(decimal number)
     {
         Span<byte> temp = stackalloc byte[32];
@@ -390,7 +397,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(merged);
     }
 
-    public bool MapKeysMatch(JsonByteBuffer key, string targetKey)
+    public bool StringsMatch(JsonByteBuffer key, string targetKey)
     {
         var span = key.Memory.Span;
 

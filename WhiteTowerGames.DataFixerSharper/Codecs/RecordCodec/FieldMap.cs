@@ -98,7 +98,7 @@ public ref struct FieldMap<TFormat>
         {
             ref readonly var entry = ref GetEntry(i);
 
-            if (ops.MapKeysMatch(entry.Key, targetKey))
+            if (ops.StringsMatch(entry.Key, targetKey))
             {
                 value = entry.Value;
                 return true;
