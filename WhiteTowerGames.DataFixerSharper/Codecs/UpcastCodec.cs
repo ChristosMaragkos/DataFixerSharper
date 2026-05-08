@@ -28,7 +28,7 @@ internal readonly struct UpcastCodec<TBase, TDer> : ICodec<TBase>
     {
         if (input is not TDer derived)
             return DataResult<TFormat>.Fail(
-                $"Cannot encode polymorphically: expected object of type {nameof(TBase)}, got {nameof(TBase)} instead"
+                $"Cannot encode polymorphically: expected object of type {typeof(TDer).Name}"
             );
 
         return _underlying.Encode(derived, ops, prefix);
