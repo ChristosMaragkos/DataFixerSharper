@@ -14,7 +14,7 @@ public class CollectionCodecs
         var codec = BuiltinCodecs.Int32.ForArray();
 
         // When
-        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(numbers, JsonOps.Empty());
+        var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(numbers);
         var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
@@ -33,11 +33,12 @@ public class CollectionCodecs
         var merged = numbersFirst.Concat(numbersSecond).ToArray();
 
         // When
-        var encodedFirst = codec.Encode<JsonOps, JsonByteBuffer>(numbersFirst, JsonOps.Empty());
-        var encodedSecond = codec.Encode<JsonOps, JsonByteBuffer>(numbersSecond, encodedFirst.GetOrThrow());
-        var encodedMerged = codec.Encode<JsonOps, JsonByteBuffer>(merged, JsonOps.Empty());
+        var encodedFirst = codec.EncodeStart<JsonOps, JsonByteBuffer>(numbersFirst);
+        var encodedSecond = codec.EncodeStart<JsonOps, JsonByteBuffer>(numbersSecond);
+        var appended = JsonOps.AppendToPrefix(encodedFirst.GetOrThrow(), encodedSecond.GetOrThrow());
+        var encodedMerged = codec.EncodeStart<JsonOps, JsonByteBuffer>(merged);
 
-        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encodedSecond.GetOrThrow());
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(appended);
         var decodedMerged = codec.Parse<JsonOps, JsonByteBuffer>(encodedMerged.GetOrThrow());
 
         // Then
@@ -58,7 +59,7 @@ public class CollectionCodecs
         var codec = ICodec.Dictionary(BuiltinCodecs.String, BuiltinCodecs.Int32);
 
         // When
-        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(dict, JsonOps.Empty());
+        var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(dict);
         var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
         var value = decoded.GetOrThrow();
 

@@ -52,7 +52,7 @@ public class CodecBuilding
     public void RecordCodec_RoundTrip_ReturnsSame(Person person)
     {
         // Given, When
-        var encoded = PersonCodec.Encode<JsonOps, JsonByteBuffer>(person, JsonOps.Empty());
+        var encoded = PersonCodec.EncodeStart<JsonOps, JsonByteBuffer>(person);
         var decoded = PersonCodec.Decode<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
@@ -69,7 +69,7 @@ public class CodecBuilding
         var peopleCodec = PersonCodec.ForArray();
 
         // When
-        var encoded = peopleCodec.Encode<JsonOps, JsonByteBuffer>(people, JsonOps.Empty());
+        var encoded = peopleCodec.EncodeStart<JsonOps, JsonByteBuffer>(people);
         var decoded = peopleCodec.Decode<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
@@ -92,7 +92,7 @@ public class CodecBuilding
         var rel = new Relationship(person, person);
 
         // When
-        var encoded = RelationshipCodec.Encode<JsonOps, JsonByteBuffer>(rel, JsonOps.Empty());
+        var encoded = RelationshipCodec.EncodeStart<JsonOps, JsonByteBuffer>(rel);
         var decoded = RelationshipCodec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
@@ -109,7 +109,7 @@ public class CodecBuilding
         var group = new FriendGroup(person, person, person, person);
 
         // When
-        var encoded = FriendGroupCodec.Encode<JsonOps, JsonByteBuffer>(group, JsonOps.Empty());
+        var encoded = FriendGroupCodec.EncodeStart<JsonOps, JsonByteBuffer>(group);
         var decoded = FriendGroupCodec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then

@@ -30,7 +30,7 @@ public class EnumRoundtrips
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
-            var encoded = codec.Encode<JsonOps, JsonByteBuffer>(value, JsonOps.Empty()).GetOrThrow();
+            var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(value).GetOrThrow();
             var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
             // Then
@@ -46,7 +46,7 @@ public class EnumRoundtrips
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
-            var encoded = codec.Encode<JsonOps, JsonByteBuffer>(value, JsonOps.Empty()).GetOrThrow();
+            var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(value).GetOrThrow();
             var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
             // Then
@@ -62,7 +62,7 @@ public class EnumRoundtrips
         var testValue = BitFlags.One | BitFlags.Two;
 
         // When
-        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(testValue, JsonOps.Empty()).GetOrThrow();
+        var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(testValue).GetOrThrow();
         var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
@@ -78,7 +78,7 @@ public class EnumRoundtrips
         var bitflags = BitFlags.One | BitFlags.Two;
 
         // When
-        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(bitflags, JsonOps.Empty()).GetOrThrow();
+        var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(bitflags).GetOrThrow();
         var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
@@ -96,7 +96,7 @@ public class EnumRoundtrips
         Assert.ThrowsAny<Exception>(() =>
         {
             var codec = EnumCodecs.FlagsByName<CardinalDirections>();
-            codec.Encode<JsonOps, JsonByteBuffer>(value, JsonOps.Empty()).GetOrThrow();
+            codec.EncodeStart<JsonOps, JsonByteBuffer>(value).GetOrThrow();
         });
     }
 }
