@@ -7,90 +7,138 @@ namespace WhiteTowerGames.DataFixerSharper.Abstractions;
 /// </summary>
 public interface IDynamicOps<TFormat> where TFormat : struct
 {
-    #region Value Creation
     static abstract TFormat Empty();
     static abstract TFormat CreateNumeric(decimal number);
     static abstract TFormat CreateString(string value);
     static abstract TFormat CreateBool(bool value);
-    #endregion
+    static abstract TFormat CreateEmptyBuffer();
+    static abstract TFormat FinalizeBuffer(TFormat buf);
+    static abstract void WriteInteger(TFormat target, long value);
+    static abstract void WriteIntegerUnsigned(TFormat target, ulong value);
+    static abstract void WriteDouble(TFormat target, double value);
+    static abstract void WriteString(TFormat target, string value);
+    static abstract void WriteBool(TFormat target, bool value);
+    static abstract void WriteMapStart(TFormat target);
+    static abstract void WriteMapEnd(TFormat target);
+    static abstract void WriteListStart(TFormat target);
+    static abstract void WriteListEnd(TFormat target);
+    static abstract void WriteKey(TFormat target, TFormat key);
+    static abstract void WriteListSeparator(TFormat target);
+    static abstract void WriteContent(TFormat target, TFormat finalizedValue);
+    static abstract TFormat CreateEmptyList();
+    static abstract DataResult<TFormat> AddToList(TFormat list, TFormat element);
+    static abstract TFormat FinalizeList(TFormat list);
 
-    #region Value Reading
+    static abstract TFormat CreateEmptyMap();
+    static abstract DataResult<TFormat> AddToMap(TFormat map, TFormat key, TFormat value);
+    static abstract TFormat FinalizeMap(TFormat map);
     static abstract DataResult<decimal> GetNumber(TFormat input);
     static abstract DataResult<string> GetString(TFormat input);
     static abstract DataResult<bool> GetBool(TFormat input);
     static abstract DataResult<TFormat> GetValue(TFormat input, string name);
-    #endregion
-
-    #region Enumerables
-    static abstract TFormat CreateEmptyList();
-    static abstract DataResult<TFormat> AddToList(TFormat list, TFormat element);
-
     static abstract DataResult<Unit> ReadList<TState, TCon>(TFormat input, ref TState state, TCon consumer)
         where TState : allows ref struct
         where TCon : ICollectionConsumer<TState, TFormat>;
 
-    static abstract TFormat FinalizeList(TFormat list);
-    #endregion
-
-    #region Maps
-    static abstract TFormat CreateEmptyMap();
-    static abstract DataResult<TFormat> AddToMap(TFormat map, TFormat key, TFormat value);
-
     static abstract DataResult<Unit> ReadMap<TState, TCon>(TFormat input, ref TState state, TCon consumer)
         where TState : allows ref struct
         where TCon : IMapConsumer<TState, TFormat>;
-
-    static abstract TFormat FinalizeMap(TFormat map);
-    #endregion
-
-    #region Utils
     static abstract TFormat AppendToPrefix(TFormat prefix, TFormat value);
     static abstract TFormat RemoveFromInput(TFormat input, string valueKey);
     static abstract bool StringsMatch(TFormat key, string targetKey);
-    #endregion
 }
 
 public static class DynamicOpsExtensions
 {
     public static TFormat CreateInt8<TOps, TFormat>(sbyte value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteInteger(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateUInt8<TOps, TFormat>(byte value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteInteger(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateInt16<TOps, TFormat>(short value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteInteger(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateUInt16<TOps, TFormat>(ushort value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteInteger(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateInt32<TOps, TFormat>(int value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteInteger(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateUInt32<TOps, TFormat>(uint value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteIntegerUnsigned(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateInt64<TOps, TFormat>(long value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteInteger(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateUInt64<TOps, TFormat>(ulong value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric(value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteIntegerUnsigned(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateFloat<TOps, TFormat>(float value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric((decimal)value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteDouble(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static TFormat CreateDouble<TOps, TFormat>(double value)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => TOps.CreateNumeric((decimal)value);
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        TOps.WriteDouble(buf, value);
+        return TOps.FinalizeBuffer(buf);
+    }
 
     public static DataResult<sbyte> GetInt8<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>

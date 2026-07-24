@@ -1,7 +1,6 @@
 using System.Buffers.Text;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Json;
@@ -25,15 +24,15 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
     private static void ReturnWriter(PooledJsonWriter writer) => _writerPool!.Push(writer);
 
-    #region Pre-allocated strings
-    private static readonly JsonByteBuffer EmptyValue = "{}"u8.ToArray(); // apparently c# lets you generate utf8-encoded strings. How long has this been a thing?
+    #region Pre-allocated constants
+    private static readonly JsonByteBuffer EmptyValue = "{}"u8.ToArray();
     private static readonly JsonByteBuffer TrueValue = "true"u8.ToArray();
     private static readonly JsonByteBuffer FalseValue = "false"u8.ToArray();
 
-    private static readonly JsonByteBuffer ArrayOpen = "["u8.ToArray();
-    private static readonly JsonByteBuffer ArrayClose = "]"u8.ToArray();
     private static readonly JsonByteBuffer ObjectOpen = "{"u8.ToArray();
     private static readonly JsonByteBuffer ObjectClose = "}"u8.ToArray();
+    private static readonly JsonByteBuffer ArrayOpen = "["u8.ToArray();
+    private static readonly JsonByteBuffer ArrayClose = "]"u8.ToArray();
     private static readonly JsonByteBuffer Comma = ","u8.ToArray();
     private static readonly JsonByteBuffer Colon = ":"u8.ToArray();
 
@@ -42,39 +41,185 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     private const string StringNotFound = "Could not fetch string value - the value was not found";
     private const string KeyNotFound = "Could not fetch keyed value - the key was not found";
     private const string EmptyInput = "Input was empty.";
-    private const string ImmutableList = "Could not append value: list was read-only or finalized";
-    private const string ImmutableMap = "Could not append to map: map was read-only or finalized.";
     #endregion
-
-    #region Value Creation
     public static JsonByteBuffer Empty() => EmptyValue;
 
-    // FIXME: This allocates way too eagerly.
-    // It shoves a byte array on the heap for every integer we encode.
-    // Let's do the math for a 12-int array:
-    // 12 integers at - let's say on average - 3 bytes per integer (because we're working with 3 digits)
-    // is 36 bytes. If you pad each of those to 8 bytes (which the GC does), we're sitting at about 100 bytes.
-    // But each one of those 12 arrays also carries an object header which from my research is shown to be about
-    // 24 bytes. 24 * 12 = 288 bytes, which brings us to about 400 bytes total.
     public static JsonByteBuffer CreateNumeric(decimal number)
     {
-        Span<byte> temp = stackalloc byte[32];
-        if (!Utf8Formatter.TryFormat(number, temp, out var byteAmount))
-            return default;
-
-        var buffer = new byte[byteAmount];
-        temp[..byteAmount].CopyTo(buffer);
-
-        return new JsonByteBuffer(buffer);
+        var buf = CreateEmptyBuffer();
+        WriteDecimal(buf, number);
+        return FinalizeBuffer(buf);
     }
 
-    public static JsonByteBuffer CreateString(string value) =>
-        JsonSerializer.SerializeToUtf8Bytes(value, JsonStringContext.Default.String);
+    public static JsonByteBuffer CreateString(string value)
+    {
+        var buf = CreateEmptyBuffer();
+        WriteString(buf, value);
+        return FinalizeBuffer(buf);
+    }
 
     public static JsonByteBuffer CreateBool(bool value) => value ? TrueValue : FalseValue;
-    #endregion
 
-    #region Value Reading
+    public static JsonByteBuffer CreateEmptyBuffer()
+    {
+        var writer = RentWriter();
+        return new JsonByteBuffer(writer);
+    }
+
+    public static JsonByteBuffer FinalizeBuffer(JsonByteBuffer buf)
+    {
+        if (buf.Writer == null)
+            return buf;
+
+        var writer = buf.Writer;
+        var result = new JsonByteBuffer(writer.WrittenSpan.ToArray());
+        ReturnWriter(writer);
+        return result;
+    }
+
+    public static void WriteInteger(JsonByteBuffer target, long value)
+    {
+        Span<byte> temp = stackalloc byte[32];
+        Utf8Formatter.TryFormat(value, temp, out var written);
+        target.Writer!.Write(temp[..written]);
+    }
+
+    public static void WriteIntegerUnsigned(JsonByteBuffer target, ulong value)
+    {
+        Span<byte> temp = stackalloc byte[32];
+        Utf8Formatter.TryFormat(value, temp, out var written);
+        target.Writer!.Write(temp[..written]);
+    }
+
+    public static void WriteDouble(JsonByteBuffer target, double value)
+    {
+        Span<byte> temp = stackalloc byte[32];
+        Utf8Formatter.TryFormat(value, temp, out var written);
+        target.Writer!.Write(temp[..written]);
+    }
+
+    public static void WriteDecimal(JsonByteBuffer target, decimal value)
+    {
+        Span<byte> temp = stackalloc byte[32];
+        if (!Utf8Formatter.TryFormat(value, temp, out var written))
+            return;
+
+        target.Writer!.Write(temp[..written]);
+    }
+
+    public static void WriteString(JsonByteBuffer target, string value)
+    {
+        target.Writer!.WriteEscapedJsonString(value.AsSpan());
+    }
+
+    public static void WriteBool(JsonByteBuffer target, bool value)
+    {
+        target.Writer!.Write(value ? TrueValue : FalseValue);
+    }
+
+    public static void WriteMapStart(JsonByteBuffer target)
+    {
+        target.Writer!.Write(ObjectOpen);
+    }
+
+    public static void WriteMapEnd(JsonByteBuffer target)
+    {
+        target.Writer!.Write(ObjectClose);
+    }
+
+    public static void WriteListStart(JsonByteBuffer target)
+    {
+        target.Writer!.Write(ArrayOpen);
+    }
+
+    public static void WriteListEnd(JsonByteBuffer target)
+    {
+        target.Writer!.Write(ArrayClose);
+    }
+
+    public static void WriteKey(JsonByteBuffer target, JsonByteBuffer key)
+    {
+        var writer = target.Writer!;
+        if (writer.WrittenSpan[^1] != (byte)'{')
+            writer.Write(Comma);
+        writer.Write(key);
+        writer.Write(Colon);
+    }
+
+    public static void WriteListSeparator(JsonByteBuffer target)
+    {
+        target.Writer!.Write(Comma);
+    }
+
+    public static void WriteContent(JsonByteBuffer target, JsonByteBuffer finalizedValue)
+    {
+        target.Writer!.Write(finalizedValue);
+    }
+
+    public static JsonByteBuffer CreateEmptyList()
+    {
+        var writer = RentWriter();
+        writer.Write(ArrayOpen);
+        return new JsonByteBuffer(writer);
+    }
+
+    public static DataResult<JsonByteBuffer> AddToList(JsonByteBuffer list, JsonByteBuffer element)
+    {
+        if (list.Writer == null)
+            return DataResult<JsonByteBuffer>.Fail("Could not append value: list was read-only or finalized");
+
+        var writer = list.Writer;
+        if (writer.WrittenSpan[^1] != (byte)'[')
+            writer.Write(Comma);
+        writer.Write(element);
+        return DataResult<JsonByteBuffer>.Success(list);
+    }
+
+    public static JsonByteBuffer FinalizeList(JsonByteBuffer list)
+    {
+        if (list.Writer == null)
+            return list;
+
+        var writer = list.Writer;
+        writer.Write(ArrayClose);
+        var result = new JsonByteBuffer(writer.WrittenSpan.ToArray());
+        ReturnWriter(writer);
+        return result;
+    }
+
+    public static JsonByteBuffer CreateEmptyMap()
+    {
+        var writer = RentWriter();
+        writer.Write(ObjectOpen);
+        return new JsonByteBuffer(writer);
+    }
+
+    public static DataResult<JsonByteBuffer> AddToMap(JsonByteBuffer map, JsonByteBuffer key, JsonByteBuffer value)
+    {
+        if (map.Writer == null)
+            return DataResult<JsonByteBuffer>.Fail("Could not append to map: map was read-only or finalized.");
+
+        var writer = map.Writer;
+        if (writer.WrittenSpan[^1] != (byte)'{')
+            writer.Write(Comma);
+        writer.Write(key);
+        writer.Write(Colon);
+        writer.Write(value);
+        return DataResult<JsonByteBuffer>.Success(map);
+    }
+
+    public static JsonByteBuffer FinalizeMap(JsonByteBuffer map)
+    {
+        if (map.Writer == null)
+            return map;
+
+        var writer = map.Writer;
+        writer.Write(ObjectClose);
+        var result = new JsonByteBuffer(writer.WrittenSpan.ToArray());
+        ReturnWriter(writer);
+        return result;
+    }
+
     public static DataResult<decimal> GetNumber(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input, true, default);
@@ -125,41 +270,17 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         {
             if (reader.TokenType == JsonTokenType.PropertyName && reader.ValueTextEquals(name))
             {
-                reader.Read(); // move to value
+                reader.Read();
                 var start = (int)reader.TokenStartIndex;
-                reader.Skip(); // skip the entire thing
-                var length = (int)reader.BytesConsumed - start; // count the bytes
+                reader.Skip();
+                var length = (int)reader.BytesConsumed - start;
 
                 return DataResult<JsonByteBuffer>.Success(input.Memory.Slice(start, length));
             }
-            reader.Skip(); // just skip for other properties
+            reader.Skip();
         }
 
         return DataResult<JsonByteBuffer>.Fail(KeyNotFound);
-    }
-    #endregion
-
-    #region Enumerables
-    public static JsonByteBuffer CreateEmptyList()
-    {
-        var writer = RentWriter();
-        writer.Write(ArrayOpen);
-        return new JsonByteBuffer(writer);
-    }
-
-    public static DataResult<JsonByteBuffer> AddToList(JsonByteBuffer list, JsonByteBuffer element)
-    {
-        if (list.Writer == null)
-            return DataResult<JsonByteBuffer>.Fail(ImmutableList);
-
-        var writer = list.Writer;
-
-        if (writer.WrittenSpan[^1] != (byte)'[') // if the last written byte was the opening bracket (i.e. the list is empty), no need for a comma
-            writer.Write(Comma);
-
-        writer.Write(element);
-
-        return DataResult<JsonByteBuffer>.Success(list); // we return a new struct, but it points to the same memory region as the other one.
     }
 
     public static DataResult<Unit> ReadList<TState, TCon>(
@@ -185,49 +306,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         }
 
         return DataResult<Unit>.Success(default);
-    }
-
-    public static JsonByteBuffer FinalizeList(JsonByteBuffer list)
-    {
-        if (list.Writer == null)
-            return list;
-
-        var writer = list.Writer;
-        writer.Write(ArrayClose);
-
-        // Return pool writer and use exact-size copy
-        var result = new JsonByteBuffer(writer.WrittenSpan.ToArray());
-        ReturnWriter(writer);
-        return result;
-    }
-    #endregion
-
-    #region Maps
-    public static JsonByteBuffer CreateEmptyMap()
-    {
-        var writer = RentWriter();
-        writer.Write(ObjectOpen);
-        return new JsonByteBuffer(writer);
-    }
-
-    public static DataResult<JsonByteBuffer> AddToMap(
-        JsonByteBuffer map,
-        JsonByteBuffer key,
-        JsonByteBuffer value
-    )
-    {
-        if (map.Writer == null)
-            return DataResult<JsonByteBuffer>.Fail(ImmutableMap);
-
-        var writer = map.Writer;
-        if (writer.WrittenSpan[^1] != (byte)'{')
-            writer.Write(Comma);
-
-        writer.Write(key);
-        writer.Write(Colon);
-        writer.Write(value);
-
-        return DataResult<JsonByteBuffer>.Success(map);
     }
 
     public static DataResult<Unit> ReadMap<TState, TCon>(
@@ -256,9 +334,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
             var keyBuffer = new JsonByteBuffer(input.Memory.Slice(keyStart, keyLength));
 
-            // var keyString = reader.GetString()!;
-            // var keyBuffer = CreateString(keyString);
-
             reader.Read();
             var valStart = (int)reader.TokenStartIndex;
             reader.Skip();
@@ -270,21 +345,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<Unit>.Success(default);
     }
 
-    public static JsonByteBuffer FinalizeMap(JsonByteBuffer map)
-    {
-        if (map.Writer == null)
-            return map;
-
-        var writer = map.Writer;
-        writer.Write(ObjectClose);
-
-        var result = new JsonByteBuffer(writer.WrittenSpan.ToArray());
-        ReturnWriter(writer);
-        return result;
-    }
-    #endregion
-
-    #region Utils
     public static JsonByteBuffer AppendToPrefix(JsonByteBuffer prefix, JsonByteBuffer value)
     {
         var finalizedValue = value;
@@ -318,7 +378,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return finalizedValue;
     }
 
-    public static JsonByteBuffer RemoveFromInput(JsonByteBuffer input, string valueKey) => input; // mutating the input while decoding is useless since our lookups are by-key
+    public static JsonByteBuffer RemoveFromInput(JsonByteBuffer input, string valueKey) => input;
 
     private static bool IsEmptyJson(in JsonByteBuffer buffer)
     {
@@ -337,12 +397,14 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
     private static bool IsJsonArray(in JsonByteBuffer buffer)
     {
-        return buffer.Memory.Span[0] == (byte)'[' && buffer.Memory.Span[^1] == (byte)']';
+        var span = buffer.Memory.Span;
+        return span.Length >= 2 && span[0] == (byte)'[' && span[^1] == (byte)']';
     }
 
     private static bool IsJsonObject(in JsonByteBuffer buffer)
     {
-        return buffer.Memory.Span[0] == (byte)'{' && buffer.Memory.Span[^1] == (byte)'}';
+        var span = buffer.Memory.Span;
+        return span.Length >= 2 && span[0] == (byte)'{' && span[^1] == (byte)'}';
     }
 
     private static JsonByteBuffer MergeArrays(in JsonByteBuffer left, in JsonByteBuffer right)
@@ -353,11 +415,10 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         if (IsEmptyJson(in right))
             return left;
 
-        // worst case scenario is we actually have to concat the arrays
         var leftValues = left.Memory.Span.Slice(1, left.Memory.Length - 2);
         var rightValues = right.Memory.Span.Slice(1, right.Memory.Length - 2);
 
-        var byteAmount = 1 + leftValues.Length + 1 + rightValues.Length + 1; // [ + left + , + right + ]
+        var byteAmount = 1 + leftValues.Length + 1 + rightValues.Length + 1;
         var merged = new byte[byteAmount];
 
         merged[0] = (byte)'[';
@@ -408,9 +469,4 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
         return span.SequenceEqual(buffer[0..actualBytes]);
     }
-    #endregion
 }
-
-[JsonSourceGenerationOptions(WriteIndented = true)]
-[JsonSerializable(typeof(string))]
-internal partial class JsonStringContext : JsonSerializerContext { }
