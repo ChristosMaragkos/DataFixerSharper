@@ -33,16 +33,13 @@ public readonly struct RecordCodec1<T, TF> : ICodec<T>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e0.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -93,19 +90,16 @@ public readonly struct RecordCodec2<T, TF, TF1> : ICodec<T>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e1.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -166,22 +160,19 @@ public readonly struct RecordCodec3<T, TF, TF1, TF2> : ICodec<T>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e2.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -248,25 +239,22 @@ public readonly struct RecordCodec4<T, TF, TF1, TF2, TF3> : ICodec<T>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-        var e3 = _f3.Encode<TOps, TFormat>(input, e2.GetOrThrow());
+        var e3 = _f3.Encode<TOps, TFormat>(input, prefix);
         if (e3.IsError)
             return e3;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e3.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -348,28 +336,25 @@ public readonly struct RecordCodec5<T, TF, TF1, TF2, TF3, TF4> : ICodec<T>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-        var e3 = _f3.Encode<TOps, TFormat>(input, e2.GetOrThrow());
+        var e3 = _f3.Encode<TOps, TFormat>(input, prefix);
         if (e3.IsError)
             return e3;
-        var e4 = _f4.Encode<TOps, TFormat>(input, e3.GetOrThrow());
+        var e4 = _f4.Encode<TOps, TFormat>(input, prefix);
         if (e4.IsError)
             return e4;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e4.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -458,31 +443,28 @@ public readonly struct RecordCodec6<T, TF, TF1, TF2, TF3, TF4, TF5> : ICodec<T>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-        var e3 = _f3.Encode<TOps, TFormat>(input, e2.GetOrThrow());
+        var e3 = _f3.Encode<TOps, TFormat>(input, prefix);
         if (e3.IsError)
             return e3;
-        var e4 = _f4.Encode<TOps, TFormat>(input, e3.GetOrThrow());
+        var e4 = _f4.Encode<TOps, TFormat>(input, prefix);
         if (e4.IsError)
             return e4;
-        var e5 = _f5.Encode<TOps, TFormat>(input, e4.GetOrThrow());
+        var e5 = _f5.Encode<TOps, TFormat>(input, prefix);
         if (e5.IsError)
             return e5;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e5.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -578,34 +560,31 @@ public readonly struct RecordCodec7<T, TF, TF1, TF2, TF3, TF4, TF5, TF6> : ICode
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-        var e3 = _f3.Encode<TOps, TFormat>(input, e2.GetOrThrow());
+        var e3 = _f3.Encode<TOps, TFormat>(input, prefix);
         if (e3.IsError)
             return e3;
-        var e4 = _f4.Encode<TOps, TFormat>(input, e3.GetOrThrow());
+        var e4 = _f4.Encode<TOps, TFormat>(input, prefix);
         if (e4.IsError)
             return e4;
-        var e5 = _f5.Encode<TOps, TFormat>(input, e4.GetOrThrow());
+        var e5 = _f5.Encode<TOps, TFormat>(input, prefix);
         if (e5.IsError)
             return e5;
-        var e6 = _f6.Encode<TOps, TFormat>(input, e5.GetOrThrow());
+        var e6 = _f6.Encode<TOps, TFormat>(input, prefix);
         if (e6.IsError)
             return e6;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e6.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -708,37 +687,34 @@ public readonly struct RecordCodec8<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7> : 
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-        var e3 = _f3.Encode<TOps, TFormat>(input, e2.GetOrThrow());
+        var e3 = _f3.Encode<TOps, TFormat>(input, prefix);
         if (e3.IsError)
             return e3;
-        var e4 = _f4.Encode<TOps, TFormat>(input, e3.GetOrThrow());
+        var e4 = _f4.Encode<TOps, TFormat>(input, prefix);
         if (e4.IsError)
             return e4;
-        var e5 = _f5.Encode<TOps, TFormat>(input, e4.GetOrThrow());
+        var e5 = _f5.Encode<TOps, TFormat>(input, prefix);
         if (e5.IsError)
             return e5;
-        var e6 = _f6.Encode<TOps, TFormat>(input, e5.GetOrThrow());
+        var e6 = _f6.Encode<TOps, TFormat>(input, prefix);
         if (e6.IsError)
             return e6;
-        var e7 = _f7.Encode<TOps, TFormat>(input, e6.GetOrThrow());
+        var e7 = _f7.Encode<TOps, TFormat>(input, prefix);
         if (e7.IsError)
             return e7;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e7.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -848,40 +824,37 @@ public readonly struct RecordCodec9<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7, TF
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-        var e3 = _f3.Encode<TOps, TFormat>(input, e2.GetOrThrow());
+        var e3 = _f3.Encode<TOps, TFormat>(input, prefix);
         if (e3.IsError)
             return e3;
-        var e4 = _f4.Encode<TOps, TFormat>(input, e3.GetOrThrow());
+        var e4 = _f4.Encode<TOps, TFormat>(input, prefix);
         if (e4.IsError)
             return e4;
-        var e5 = _f5.Encode<TOps, TFormat>(input, e4.GetOrThrow());
+        var e5 = _f5.Encode<TOps, TFormat>(input, prefix);
         if (e5.IsError)
             return e5;
-        var e6 = _f6.Encode<TOps, TFormat>(input, e5.GetOrThrow());
+        var e6 = _f6.Encode<TOps, TFormat>(input, prefix);
         if (e6.IsError)
             return e6;
-        var e7 = _f7.Encode<TOps, TFormat>(input, e6.GetOrThrow());
+        var e7 = _f7.Encode<TOps, TFormat>(input, prefix);
         if (e7.IsError)
             return e7;
-        var e8 = _f8.Encode<TOps, TFormat>(input, e7.GetOrThrow());
+        var e8 = _f8.Encode<TOps, TFormat>(input, prefix);
         if (e8.IsError)
             return e8;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e8.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -998,43 +971,40 @@ public readonly struct RecordCodec10<T, TF, TF1, TF2, TF3, TF4, TF5, TF6, TF7, T
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var e0 = _f0.Encode<TOps, TFormat>(input, TOps.CreateEmptyMap());
+        TOps.WriteMapStart(prefix);
+        var e0 = _f0.Encode<TOps, TFormat>(input, prefix);
         if (e0.IsError)
             return e0;
-        var e1 = _f1.Encode<TOps, TFormat>(input, e0.GetOrThrow());
+        var e1 = _f1.Encode<TOps, TFormat>(input, prefix);
         if (e1.IsError)
             return e1;
-        var e2 = _f2.Encode<TOps, TFormat>(input, e1.GetOrThrow());
+        var e2 = _f2.Encode<TOps, TFormat>(input, prefix);
         if (e2.IsError)
             return e2;
-        var e3 = _f3.Encode<TOps, TFormat>(input, e2.GetOrThrow());
+        var e3 = _f3.Encode<TOps, TFormat>(input, prefix);
         if (e3.IsError)
             return e3;
-        var e4 = _f4.Encode<TOps, TFormat>(input, e3.GetOrThrow());
+        var e4 = _f4.Encode<TOps, TFormat>(input, prefix);
         if (e4.IsError)
             return e4;
-        var e5 = _f5.Encode<TOps, TFormat>(input, e4.GetOrThrow());
+        var e5 = _f5.Encode<TOps, TFormat>(input, prefix);
         if (e5.IsError)
             return e5;
-        var e6 = _f6.Encode<TOps, TFormat>(input, e5.GetOrThrow());
+        var e6 = _f6.Encode<TOps, TFormat>(input, prefix);
         if (e6.IsError)
             return e6;
-        var e7 = _f7.Encode<TOps, TFormat>(input, e6.GetOrThrow());
+        var e7 = _f7.Encode<TOps, TFormat>(input, prefix);
         if (e7.IsError)
             return e7;
-        var e8 = _f8.Encode<TOps, TFormat>(input, e7.GetOrThrow());
+        var e8 = _f8.Encode<TOps, TFormat>(input, prefix);
         if (e8.IsError)
             return e8;
-        var e9 = _f9.Encode<TOps, TFormat>(input, e8.GetOrThrow());
+        var e9 = _f9.Encode<TOps, TFormat>(input, prefix);
         if (e9.IsError)
             return e9;
-
-        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, e9.GetOrThrow()));
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
-        where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>

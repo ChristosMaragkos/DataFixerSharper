@@ -79,18 +79,15 @@ public readonly struct FieldCodec<T, TField> : IFieldCodec<T, TField>
         where TFormat : struct
     {
         var value = _getter(input);
-        var encodedValue = _codec.EncodeStart<TOps, TFormat>(value);
-
-        if (encodedValue.IsError)
-            return encodedValue;
-
         var key = IFieldCodec<T, TField>.KeyCache.TryGetValue(
             (typeof(TFormat), _name),
             out var cached
         )
             ? (TFormat)cached
             : CacheKey<TOps, TFormat>();
-        return TOps.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+
+        TOps.WriteKey(accumulator, key);
+        return _codec.Encode<TOps, TFormat>(value, accumulator);
     }
 
     private TFormat CacheKey<TOps, TFormat>()
@@ -128,11 +125,11 @@ public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         where TFormat : struct
     {
         var fetchedValue = TOps.GetValue(input, _name);
-        if (fetchedValue.IsError) // if the value was not present
+        if (fetchedValue.IsError)
             return DataResult<(TField, TFormat)>.Success((_defaultValue, input));
 
         var value = _codec.Parse<TOps, TFormat>(fetchedValue.GetOrThrow());
-        if (value.IsError) // if the value was found, but malformed
+        if (value.IsError)
             return DataResult<(TField, TFormat)>.Fail(value.ErrorMessage);
 
         input = TOps.RemoveFromInput(input, _name);
@@ -156,11 +153,7 @@ public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         var value = _getter(input);
 
         if (EqualityComparer<TField>.Default.Equals(value, _defaultValue))
-            return DataResult<TFormat>.Success(accumulator); // don't encode the default value
-
-        var encodedValue = _codec.EncodeStart<TOps, TFormat>(value);
-        if (encodedValue.IsError)
-            return encodedValue;
+            return DataResult<TFormat>.Success(accumulator);
 
         var key = IFieldCodec<T, TField>.KeyCache.TryGetValue(
             (typeof(TFormat), _name),
@@ -168,7 +161,9 @@ public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         )
             ? (TFormat)cached
             : CacheKey<TOps, TFormat>();
-        return TOps.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+
+        TOps.WriteKey(accumulator, key);
+        return _codec.Encode<TOps, TFormat>(value, accumulator);
     }
 
     private TFormat CacheKey<TOps, TFormat>()
