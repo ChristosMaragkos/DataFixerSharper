@@ -8,11 +8,10 @@ public class OpsMutation
     public void Append_EmptyValue_DoesNothing()
     {
         // Given, When
-        var ops = JsonOps.Instance;
-        var existing = ops.CreateNumeric(42);
-        var empty = ops.Empty();
+        var existing = JsonOps.CreateNumeric(42);
+        var empty = JsonOps.Empty();
 
-        var result = ops.AppendToPrefix(existing, empty);
+        var result = JsonOps.AppendToPrefix(existing, empty);
 
         // Then
         Assert.Equal(existing.ToJsonString(), result.ToJsonString());
@@ -22,10 +21,9 @@ public class OpsMutation
     public void Append_NonEmpty_ToEmptyValue_ReturnsAppender()
     {
         // Given, When
-        var ops = JsonOps.Instance;
-        var existing = ops.Empty();
-        var appender = ops.CreateNumeric(42);
-        var result = ops.AppendToPrefix(existing, appender);
+        var existing = JsonOps.Empty();
+        var appender = JsonOps.CreateNumeric(42);
+        var result = JsonOps.AppendToPrefix(existing, appender);
 
         // Then
         Assert.Equal(appender.ToJsonString(), result.ToJsonString());

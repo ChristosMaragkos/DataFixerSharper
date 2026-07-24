@@ -34,50 +34,69 @@ public interface ICodec
 
 public interface ICodec<T> : ICodec
 {
-    DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat>;
-
-    DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
-        where TOps : IDynamicOps<TFormat>;
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
-        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
-
-    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+    DataResult<(T, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct;
+
+    DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct;
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var parsed = Decode(ops, input);
+        var buf = TOps.CreateEmptyBuffer();
+        var result = Encode<TOps, TFormat>(input, buf);
+        return result.IsError
+            ? result
+            : DataResult<TFormat>.Success(TOps.FinalizeBuffer(result.GetOrThrow()));
+    }
+
+    public DataResult<T> Parse<TOps, TFormat>(TFormat input)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
+    {
+        var parsed = Decode<TOps, TFormat>(input);
         if (parsed.IsError)
             return DataResult<T>.Fail(parsed.ErrorMessage);
 
         return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 
-    public ICodec<List<T>> ForList() => new ListCodec<T>(this);
+    public ICodec<IList<T>> ForList() => new ListCodec<T>(this);
 
     public ICodec<T[]> ForArray() =>
-        ForList().SafeMap<T[]>(array => array.ToList(), list => list.ToArray());
+        ForList().SafeMap<T[]>(array => array, list => list.ToArray());
 
     public ICodec<T> Conditional(Predicate<T> condition) =>
         new ConditionalCodec<T>(this, condition);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T <-> TOther always valid.
+    /// </summary>
     public ICodec<TOther> SafeMap<TOther>(Func<TOther, T> from, Func<T, TOther> to) =>
         new SafeMapCodec<T, TOther>(this, to, from);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T <-> TOther not always valid.
+    /// </summary>
     public ICodec<TOther> UnsafeMap<TOther>(
         Func<TOther, DataResult<T>> from,
         Func<T, DataResult<TOther>> to
     ) => new UnsafeMapCodec<T, TOther>(this, to, from);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T -> TOther always valid.
+    /// </summary>
     public ICodec<TOther> Safe2UnsafeMap<TOther>(
         Func<TOther, DataResult<T>> from,
         Func<T, TOther> to
     ) => new Safe2UnsafeMapCodec<T, TOther>(this, to, from);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when TOther -> T always valid.
+    /// </summary>
     public ICodec<TOther> Unsafe2SafeMap<TOther>(
         Func<TOther, T> from,
         Func<T, DataResult<TOther>> to

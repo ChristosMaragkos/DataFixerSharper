@@ -13,10 +13,11 @@ internal readonly struct ConditionalCodec<T> : ICodec<T>
         _condition = condition;
     }
 
-    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var decoded = _underlying.Decode(ops, input);
+        var decoded = _underlying.Decode<TOps, TFormat>(input);
         if (decoded.IsError)
             return decoded;
 
@@ -26,12 +27,13 @@ internal readonly struct ConditionalCodec<T> : ICodec<T>
         return decoded;
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         if (!_condition(input))
             return DataResult<TFormat>.Fail("Input did not comply with the given condition.");
-        var encoded = _underlying.Encode(input, ops, prefix);
+        var encoded = _underlying.Encode<TOps, TFormat>(input, prefix);
         return encoded;
     }
 }

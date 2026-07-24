@@ -16,6 +16,7 @@ internal readonly struct FieldMapEntry<TFormat>
 }
 
 public ref struct FieldMap<TFormat>
+    where TFormat : struct
 {
     private FieldMapEntry<TFormat> _e0,
         _e1,
@@ -91,14 +92,14 @@ public ref struct FieldMap<TFormat>
         _count++;
     }
 
-    public bool TryGet<TOps>(TOps ops, string targetKey, out TFormat value)
+    public bool TryGet<TOps>(string targetKey, out TFormat value)
         where TOps : IDynamicOps<TFormat>
     {
         for (var i = 0; i < _count; i++)
         {
             ref readonly var entry = ref GetEntry(i);
 
-            if (ops.StringsMatch(entry.Key, targetKey))
+            if (TOps.StringsMatch(entry.Key, targetKey))
             {
                 value = entry.Value;
                 return true;
@@ -152,6 +153,7 @@ public ref struct FieldMap<TFormat>
 
 internal readonly struct FieldMapConsumer<TOps, TFormat> : IMapConsumer<FieldMap<TFormat>, TFormat>
     where TOps : IDynamicOps<TFormat>
+    where TFormat : struct
 {
     public void Accept(ref FieldMap<TFormat> state, TFormat key, TFormat value)
     {

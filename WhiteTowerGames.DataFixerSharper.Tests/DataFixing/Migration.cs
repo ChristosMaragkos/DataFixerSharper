@@ -8,8 +8,6 @@ namespace WhiteTowerGames.DataFixerSharper.Tests.DataFixing;
 
 public class Migration
 {
-    private static readonly JsonOps JsonOps = JsonOps.Instance;
-
     [Fact]
     public void Dynamic_AddsFieldCorrectly()
     {
@@ -19,7 +17,7 @@ public class Migration
         var emptyMap = JsonOps.CreateEmptyMap();
         emptyMap = JsonOps.FinalizeMap(emptyMap);
 
-        var dyn = new Dynamic<JsonByteBuffer>(JsonOps, buf)
+        var dyn = new Dynamic<JsonOps, JsonByteBuffer>(buf)
             .Set("stats", emptyMap)
             .Get("stats")
             .Set("mana", JsonOps.CreateNumeric(10));
@@ -28,7 +26,7 @@ public class Migration
 
         Assert.False(manaResult.IsError, manaResult.ErrorMessage);
 
-        var mana = JsonOps.GetInt32(manaResult.GetOrThrow().Value).GetOrElse(0);
+        var mana = DynamicOpsExtensions.GetInt32<JsonOps, JsonByteBuffer>(manaResult.GetOrThrow().Value).GetOrElse(0);
 
         Assert.Equal(10, mana);
     }
@@ -36,16 +34,16 @@ public class Migration
     [Fact]
     public void Engine_RecordMigration_RenamesFieldCorrectly()
     {
-        var engine = new DataFixEngine<JsonByteBuffer>(JsonOps);
+        var engine = new DataFixEngine<JsonOps, JsonByteBuffer>();
 
         var playerSchema = new RecordSchema(
             new Dictionary<string, ISchemaType> { { "hp", BuiltinSchemas.Number } }
         );
 
-        static DynamicResult<JsonByteBuffer> rule(Dynamic<JsonByteBuffer> dyn) =>
+        static DynamicResult<JsonOps, JsonByteBuffer> rule(Dynamic<JsonOps, JsonByteBuffer> dyn) =>
             dyn.Rename("hp", "health");
 
-        var fixV1_1 = new SchemaDrivenFix<JsonByteBuffer>(new Version(1, 1), playerSchema, rule);
+        var fixV1_1 = new SchemaDrivenFix<JsonOps, JsonByteBuffer>(new Version(1, 1), playerSchema, rule);
 
         var v1Data = JsonOps.CreateEmptyMap();
         v1Data = JsonOps
@@ -54,7 +52,7 @@ public class Migration
 
         v1Data = JsonOps.FinalizeMap(v1Data);
 
-        var result = fixV1_1.Apply(new Dynamic<JsonByteBuffer>(JsonOps, v1Data));
+        var result = fixV1_1.Apply(new Dynamic<JsonOps, JsonByteBuffer>(v1Data));
 
         Assert.False(result.IsError, $"Migration failed: {result.ErrorMessage}");
 
@@ -74,8 +72,8 @@ public class Migration
     [Fact]
     public void TimelineBuilder_Executes_Correctly()
     {
-        var engine = new DataFixEngine<JsonByteBuffer>(JsonOps);
-        var playerTimeline = TimelineBuilder<JsonByteBuffer>
+        var engine = new DataFixEngine<JsonOps, JsonByteBuffer>();
+        var playerTimeline = TimelineBuilder<JsonOps, JsonByteBuffer>
             .Create()
             .BaseSchema(
                 new Dictionary<string, ISchemaType>

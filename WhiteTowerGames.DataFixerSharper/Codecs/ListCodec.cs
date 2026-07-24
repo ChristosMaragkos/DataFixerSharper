@@ -2,7 +2,7 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Codecs;
 
-internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
+internal readonly struct ListCodec<TElement> : ICodec<IList<TElement>>
 {
     private readonly ICodec<TElement> _underlying;
 
@@ -11,53 +11,53 @@ internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
         _underlying = underlying;
     }
 
-    public DataResult<(List<TElement>, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(IList<TElement>, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         // make a list out of TFormat, accept every element in it, add it to our ref list.
-        var consumer = new ListConsumer<TOps, TFormat>(_underlying, ops);
+        var consumer = new ListConsumer<TOps, TFormat>(_underlying);
         var state = new DecodeState();
-        var listResult = ops.ReadList(input, ref state, consumer);
+        var listResult = TOps.ReadList(input, ref state, consumer);
 
         if (listResult.IsError) // was there any error parsing the encoded value?
-            return DataResult<(List<TElement>, TFormat)>.Fail(listResult.ErrorMessage);
+            return DataResult<(IList<TElement>, TFormat)>.Fail(listResult.ErrorMessage);
 
         if (state.IsError)
-            return DataResult<(List<TElement>, TFormat)>.Fail(state.ErrorMessage);
+            return DataResult<(IList<TElement>, TFormat)>.Fail(state.ErrorMessage);
 
-        return DataResult<(List<TElement>, TFormat)>.Success((state.Elements, input));
+        return DataResult<(IList<TElement>, TFormat)>.Success((state.Elements, input));
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(List<TElement> input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(IList<TElement> input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var list = DataResult<TFormat>.Success(ops.CreateEmptyList());
+        TOps.WriteListStart(prefix);
+        var first = true;
         foreach (var item in input)
         {
-            var encoded = _underlying.EncodeStart<TOps, TFormat>(ops, item);
-            if (encoded.IsError)
-                return encoded;
+            if (!first)
+                TOps.WriteListSeparator(prefix);
 
-            var appendedValue = ops.AddToList(list.GetOrThrow(), encoded.GetOrThrow());
-            if (list.IsError)
-                return appendedValue;
-
-            list = appendedValue;
+            var result = _underlying.Encode<TOps, TFormat>(item, prefix);
+            if (result.IsError)
+                return result;
+            first = false;
         }
-        var finalValue = ops.AppendToPrefix(prefix, list.GetOrThrow());
-        return DataResult<TFormat>.Success(finalValue);
+        TOps.WriteListEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
 
     private readonly struct ListConsumer<TOps, TFormat> : ICollectionConsumer<DecodeState, TFormat>
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         private readonly ICodec<TElement> _underlyingCodec;
-        private readonly TOps _ops;
 
-        public ListConsumer(ICodec<TElement> underlyingCodec, TOps ops)
+        public ListConsumer(ICodec<TElement> underlyingCodec)
         {
             _underlyingCodec = underlyingCodec;
-            _ops = ops;
         }
 
         public void Accept(ref DecodeState collection, TFormat item)
@@ -65,7 +65,7 @@ internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
             if (collection.IsError)
                 return;
 
-            var decoded = _underlyingCodec.Parse(_ops, item);
+            var decoded = _underlyingCodec.Parse<TOps, TFormat>(item);
             if (decoded.IsError)
                 collection.ErrorStatus = DataResult<Unit>.Fail(decoded.ErrorMessage);
             else
@@ -80,14 +80,14 @@ internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
 
         public DecodeState()
         {
-            Elements = new();
+            Elements = [];
             ErrorStatus = DataResult<Unit>.Success(default);
         }
 
-        public void Add(TElement item) => Elements.Add(item);
+        public readonly void Add(TElement item) => Elements.Add(item);
 
-        public bool IsError => ErrorStatus.IsError;
+        public readonly bool IsError => ErrorStatus.IsError;
 
-        public string ErrorMessage => ErrorStatus.ErrorMessage;
+        public readonly string ErrorMessage => ErrorStatus.ErrorMessage;
     }
 }

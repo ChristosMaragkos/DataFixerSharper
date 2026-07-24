@@ -22,8 +22,6 @@ public class EnumRoundtrips
         Eight = 8,
     }
 
-    private static readonly JsonOps JsonOps = JsonOps.Instance;
-
     [Fact]
     public void EnumByValue_Roundtrip_Deterministic()
     {
@@ -32,8 +30,8 @@ public class EnumRoundtrips
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
-            var encoded = codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
-            var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+            var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(value).GetOrThrow();
+            var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
             // Then
             Assert.Equal(value, decoded);
@@ -48,8 +46,8 @@ public class EnumRoundtrips
         foreach (var value in Enum.GetValues<CardinalDirections>())
         {
             // When
-            var encoded = codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
-            var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+            var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(value).GetOrThrow();
+            var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
             // Then
             Assert.Equal(value, decoded);
@@ -64,8 +62,8 @@ public class EnumRoundtrips
         var testValue = BitFlags.One | BitFlags.Two;
 
         // When
-        var encoded = codec.Encode(testValue, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(testValue).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.Equal(testValue, decoded);
@@ -80,8 +78,8 @@ public class EnumRoundtrips
         var bitflags = BitFlags.One | BitFlags.Two;
 
         // When
-        var encoded = codec.Encode(bitflags, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.EncodeStart<JsonOps, JsonByteBuffer>(bitflags).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.All(encoded.ToJsonArray(), node => flagsArray.Contains(node!.ToString()));
@@ -98,7 +96,7 @@ public class EnumRoundtrips
         Assert.ThrowsAny<Exception>(() =>
         {
             var codec = EnumCodecs.FlagsByName<CardinalDirections>();
-            codec.Encode(value, JsonOps, JsonOps.Empty()).GetOrThrow();
+            codec.EncodeStart<JsonOps, JsonByteBuffer>(value).GetOrThrow();
         });
     }
 }

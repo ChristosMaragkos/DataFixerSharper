@@ -27,8 +27,6 @@ public class Polymorphism
         yield return new object[] { new Rectangle(10f, 20f), typeof(Rectangle) };
     }
 
-    private static readonly JsonOps JsonOps = JsonOps.Instance;
-
     private static readonly ICodec<Circle> CircleCodec = RecordCodecBuilder.Create<Circle>(
         instance =>
             instance
@@ -67,8 +65,8 @@ public class Polymorphism
     public void PolymorphicDispatch_Roundtrip_ReturnsSameObject(Shape shape, Type shapeType)
     {
         // Given, When
-        var encoded = ShapeDispatch.EncodeStart<JsonOps, JsonByteBuffer>(JsonOps, shape);
-        var decoded = ShapeDispatch.Parse(JsonOps, encoded.GetOrThrow());
+        var encoded = ShapeDispatch.EncodeStart<JsonOps, JsonByteBuffer>(shape);
+        var decoded = ShapeDispatch.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
