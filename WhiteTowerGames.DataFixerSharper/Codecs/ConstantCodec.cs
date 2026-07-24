@@ -11,9 +11,11 @@ internal readonly struct ConstantCodec<T> : ICodec<T>
         _value = value;
     }
 
-    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat> => DataResult<(T, TFormat)>.Success((_value, input));
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TFormat input)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct => DataResult<(T, TFormat)>.Success((_value, input));
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
-        where TOps : IDynamicOps<TFormat> => DataResult<TFormat>.Success(ops.Empty());
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct => DataResult<TFormat>.Success(TOps.Empty());
 }

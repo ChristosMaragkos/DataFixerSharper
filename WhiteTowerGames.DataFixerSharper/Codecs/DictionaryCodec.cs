@@ -15,14 +15,14 @@ internal readonly struct DictionaryCodec<TKey, TValue> : ICodec<Dictionary<TKey,
     }
 
     public DataResult<(Dictionary<TKey, TValue>, TFormat)> Decode<TOps, TFormat>(
-        TOps ops,
         TFormat input
     )
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var consumer = new DictConsumer<TOps, TFormat>(_keyCodec, _valueCodec, ops);
+        var consumer = new DictConsumer<TOps, TFormat>(_keyCodec, _valueCodec);
         var state = new DecodeState();
-        var mapResult = ops.ReadMap(input, ref state, consumer);
+        var mapResult = TOps.ReadMap(input, ref state, consumer);
 
         if (mapResult.IsError)
             return Fail(mapResult.ErrorMessage);
@@ -43,45 +43,44 @@ internal readonly struct DictionaryCodec<TKey, TValue> : ICodec<Dictionary<TKey,
 
     public DataResult<TFormat> Encode<TOps, TFormat>(
         Dictionary<TKey, TValue> input,
-        TOps ops,
         TFormat prefix
     )
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var map = ops.CreateEmptyMap();
+        var map = TOps.CreateEmptyMap();
         foreach (var kvp in input)
         {
-            var keyEnc = _keyCodec.EncodeStart<TOps, TFormat>(ops, kvp.Key);
+            var keyEnc = _keyCodec.EncodeStart<TOps, TFormat>(kvp.Key);
             if (keyEnc.IsError)
                 return keyEnc;
 
-            var valEnc = _valueCodec.EncodeStart<TOps, TFormat>(ops, kvp.Value);
+            var valEnc = _valueCodec.EncodeStart<TOps, TFormat>(kvp.Value);
             if (valEnc.IsError)
                 return valEnc;
 
-            var appended = ops.AddToMap(map, keyEnc.GetOrThrow(), valEnc.GetOrThrow());
+            var appended = TOps.AddToMap(map, keyEnc.GetOrThrow(), valEnc.GetOrThrow());
             if (appended.IsError) // just in case
                 return appended;
 
             map = appended.GetOrThrow();
         }
 
-        var finalPrefix = ops.AppendToPrefix(prefix, map);
+        var finalPrefix = TOps.AppendToPrefix(prefix, map);
         return DataResult<TFormat>.Success(finalPrefix);
     }
 
     private readonly struct DictConsumer<TOps, TFormat> : IMapConsumer<DecodeState, TFormat>
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         private readonly ICodec<TKey> _keyCodec;
         private readonly ICodec<TValue> _valueCodec;
-        private readonly TOps _ops;
 
-        public DictConsumer(ICodec<TKey> keyCodec, ICodec<TValue> valueCodec, TOps ops)
+        public DictConsumer(ICodec<TKey> keyCodec, ICodec<TValue> valueCodec)
         {
             _keyCodec = keyCodec;
             _valueCodec = valueCodec;
-            _ops = ops;
         }
 
         public void Accept(ref DecodeState map, TFormat key, TFormat value)
@@ -89,14 +88,14 @@ internal readonly struct DictionaryCodec<TKey, TValue> : ICodec<Dictionary<TKey,
             if (map.IsError)
                 return;
 
-            var keyDec = _keyCodec.Parse(_ops, key);
+            var keyDec = _keyCodec.Parse<TOps, TFormat>(key);
             if (keyDec.IsError)
             {
                 map.ErrorState = DataResult<Unit>.Fail(keyDec.ErrorMessage);
                 return;
             }
 
-            var valDec = _valueCodec.Parse(_ops, value);
+            var valDec = _valueCodec.Parse<TOps, TFormat>(value);
             if (valDec.IsError)
             {
                 map.ErrorState = DataResult<Unit>.Fail(valDec.ErrorMessage);

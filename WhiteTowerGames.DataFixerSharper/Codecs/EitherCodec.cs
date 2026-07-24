@@ -13,23 +13,25 @@ internal readonly struct EitherCodec<T> : ICodec<T>
         _second = second;
     }
 
-    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(T, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var firstTry = _first.Decode(ops, input);
+        var firstTry = _first.Decode<TOps, TFormat>(input);
         if (!firstTry.IsError)
             return firstTry;
 
-        return _second.Decode(ops, input);
+        return _second.Decode<TOps, TFormat>(input);
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var firstTry = _first.Encode(input, ops, prefix);
+        var firstTry = _first.Encode<TOps, TFormat>(input, prefix);
         if (!firstTry.IsError)
             return firstTry;
 
-        return _second.Encode(input, ops, prefix);
+        return _second.Encode<TOps, TFormat>(input, prefix);
     }
 }

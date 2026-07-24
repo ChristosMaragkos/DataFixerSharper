@@ -6,8 +6,6 @@ namespace WhiteTowerGames.DataFixerSharper.Tests.Composition;
 
 public class CodecBuilding
 {
-    private static readonly JsonOps JsonOps = JsonOps.Instance;
-
     public sealed record Person(string Name, int Age);
 
     public sealed record Relationship(Person Person1, Person Person2);
@@ -54,8 +52,8 @@ public class CodecBuilding
     public void RecordCodec_RoundTrip_ReturnsSame(Person person)
     {
         // Given, When
-        var encoded = PersonCodec.Encode(person, JsonOps, JsonOps.Empty());
-        var decoded = PersonCodec.Decode(JsonOps, encoded.GetOrThrow());
+        var encoded = PersonCodec.Encode<JsonOps, JsonByteBuffer>(person, JsonOps.Empty());
+        var decoded = PersonCodec.Decode<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
@@ -71,8 +69,8 @@ public class CodecBuilding
         var peopleCodec = PersonCodec.ForArray();
 
         // When
-        var encoded = peopleCodec.Encode(people, JsonOps, JsonOps.Empty());
-        var decoded = peopleCodec.Decode(JsonOps, encoded.GetOrThrow());
+        var encoded = peopleCodec.Encode<JsonOps, JsonByteBuffer>(people, JsonOps.Empty());
+        var decoded = peopleCodec.Decode<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
@@ -94,8 +92,8 @@ public class CodecBuilding
         var rel = new Relationship(person, person);
 
         // When
-        var encoded = RelationshipCodec.Encode(rel, JsonOps, JsonOps.Empty());
-        var decoded = RelationshipCodec.Parse(JsonOps, encoded.GetOrThrow());
+        var encoded = RelationshipCodec.Encode<JsonOps, JsonByteBuffer>(rel, JsonOps.Empty());
+        var decoded = RelationshipCodec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
@@ -111,8 +109,8 @@ public class CodecBuilding
         var group = new FriendGroup(person, person, person, person);
 
         // When
-        var encoded = FriendGroupCodec.Encode(group, JsonOps, JsonOps.Empty());
-        var decoded = FriendGroupCodec.Parse(JsonOps, encoded.GetOrThrow());
+        var encoded = FriendGroupCodec.Encode<JsonOps, JsonByteBuffer>(group, JsonOps.Empty());
+        var decoded = FriendGroupCodec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);

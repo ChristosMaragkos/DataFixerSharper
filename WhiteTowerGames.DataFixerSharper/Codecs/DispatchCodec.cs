@@ -22,16 +22,17 @@ internal readonly struct DispatchCodec<TBase, TDis> : ICodec<TBase>
         _codecGetter = codecGetter;
     }
 
-    public DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TBase, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var typeResult = ops.GetValue(input, _discriminatorKeyName);
+        var typeResult = TOps.GetValue(input, _discriminatorKeyName);
         if (typeResult.IsError)
             return DataResult<(TBase, TFormat)>.Fail(
                 $"Input was missing polymorphic type discriminator named {_discriminatorKeyName} - [{typeResult.ErrorMessage}]"
             );
 
-        var discrResult = _discriminatorCodec.Parse(ops, typeResult.GetOrThrow());
+        var discrResult = _discriminatorCodec.Parse<TOps, TFormat>(typeResult.GetOrThrow());
         if (discrResult.IsError)
             return DataResult<(TBase, TFormat)>.Fail(
                 $"Failed to decode type discriminator: [{discrResult.ErrorMessage}]"
@@ -40,29 +41,30 @@ internal readonly struct DispatchCodec<TBase, TDis> : ICodec<TBase>
         var discriminator = discrResult.GetOrThrow();
         var innerCodec = _codecGetter(discriminator);
 
-        var inputWithoutType = ops.RemoveFromInput(input, _discriminatorKeyName);
+        var inputWithoutType = TOps.RemoveFromInput(input, _discriminatorKeyName);
 
-        return innerCodec.Decode(ops, inputWithoutType);
+        return innerCodec.Decode<TOps, TFormat>(inputWithoutType);
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(TBase input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         var discriminator = _discriminatorGetter(input);
-        var discrEncoded = _discriminatorCodec.EncodeStart<TOps, TFormat>(ops, discriminator);
+        var discrEncoded = _discriminatorCodec.EncodeStart<TOps, TFormat>(discriminator);
         if (discrEncoded.IsError)
             return discrEncoded;
 
-        var map = ops.CreateEmptyMap();
-        var typeKey = ops.CreateString(_discriminatorKeyName);
+        var map = TOps.CreateEmptyMap();
+        var typeKey = TOps.CreateString(_discriminatorKeyName);
 
-        var typedMap = ops.AddToMap(map, typeKey, discrEncoded.GetOrThrow());
+        var typedMap = TOps.AddToMap(map, typeKey, discrEncoded.GetOrThrow());
         if (typedMap.IsError)
             return typedMap;
 
-        var combinedPrefix = ops.AppendToPrefix(prefix, typedMap.GetOrThrow());
+        var combinedPrefix = TOps.AppendToPrefix(prefix, typedMap.GetOrThrow());
 
         var innerCodec = _codecGetter(discriminator);
-        return innerCodec.Encode(input, ops, combinedPrefix);
+        return innerCodec.Encode<TOps, TFormat>(input, combinedPrefix);
     }
 }

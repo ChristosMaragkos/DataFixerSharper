@@ -5,8 +5,6 @@ namespace WhiteTowerGames.DataFixerSharper.Tests.Collections;
 
 public class CollectionCodecs
 {
-    private static readonly JsonOps JsonOps = JsonOps.Instance;
-
     [Theory]
     [InlineData(1, 2, 3)]
     [InlineData(new int[] { })]
@@ -16,8 +14,8 @@ public class CollectionCodecs
         var codec = BuiltinCodecs.Int32.ForArray();
 
         // When
-        var encoded = codec.Encode(numbers, JsonOps, JsonOps.Empty());
-        var decoded = codec.Parse(JsonOps, encoded.GetOrThrow());
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(numbers, JsonOps.Empty());
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
 
         // Then
         Assert.False(encoded.IsError, encoded.ErrorMessage);
@@ -35,12 +33,12 @@ public class CollectionCodecs
         var merged = numbersFirst.Concat(numbersSecond).ToArray();
 
         // When
-        var encodedFirst = codec.Encode(numbersFirst, JsonOps, JsonOps.Empty());
-        var encodedSecond = codec.Encode(numbersSecond, JsonOps, encodedFirst.GetOrThrow());
-        var encodedMerged = codec.Encode(merged, JsonOps, JsonOps.Empty());
+        var encodedFirst = codec.Encode<JsonOps, JsonByteBuffer>(numbersFirst, JsonOps.Empty());
+        var encodedSecond = codec.Encode<JsonOps, JsonByteBuffer>(numbersSecond, encodedFirst.GetOrThrow());
+        var encodedMerged = codec.Encode<JsonOps, JsonByteBuffer>(merged, JsonOps.Empty());
 
-        var decoded = codec.Parse(JsonOps, encodedSecond.GetOrThrow());
-        var decodedMerged = codec.Parse(JsonOps, encodedMerged.GetOrThrow());
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encodedSecond.GetOrThrow());
+        var decodedMerged = codec.Parse<JsonOps, JsonByteBuffer>(encodedMerged.GetOrThrow());
 
         // Then
         Assert.False(encodedSecond.IsError, encodedSecond.ErrorMessage);
@@ -60,8 +58,8 @@ public class CollectionCodecs
         var codec = ICodec.Dictionary(BuiltinCodecs.String, BuiltinCodecs.Int32);
 
         // When
-        var encoded = codec.Encode(dict, JsonOps, JsonOps.Empty());
-        var decoded = codec.Parse(JsonOps, encoded.GetOrThrow());
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(dict, JsonOps.Empty());
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded.GetOrThrow());
         var value = decoded.GetOrThrow();
 
         // Then

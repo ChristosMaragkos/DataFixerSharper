@@ -21,13 +21,16 @@ public static class CodecFieldExtensions
 
 public interface IFieldCodec<T, TField>
 {
-    DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat accumulator)
-        where TOps : IDynamicOps<TFormat>;
-    DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat>;
+    DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat accumulator)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct;
+    DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TFormat input)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct;
 
-    DataResult<TField> DecodeFromMap<TOps, TFormat>(TOps ops, ref FieldMap<TFormat> map)
-        where TOps : IDynamicOps<TFormat>;
+    DataResult<TField> DecodeFromMap<TOps, TFormat>(ref FieldMap<TFormat> map)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct;
 
     internal static readonly ConcurrentDictionary<(Type, string), object> KeyCache = new();
 }
@@ -45,35 +48,38 @@ public readonly struct FieldCodec<T, TField> : IFieldCodec<T, TField>
         _getter = getter;
     }
 
-    public DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var fetchedValue = ops.GetValue(input, _name);
+        var fetchedValue = TOps.GetValue(input, _name);
         if (fetchedValue.IsError)
             return DataResult<(TField, TFormat)>.Fail(fetchedValue.ErrorMessage);
 
-        var value = _codec.Parse(ops, fetchedValue.GetOrThrow());
+        var value = _codec.Parse<TOps, TFormat>(fetchedValue.GetOrThrow());
         if (value.IsError)
             return DataResult<(TField, TFormat)>.Fail(value.ErrorMessage);
 
-        input = ops.RemoveFromInput(input, _name);
+        input = TOps.RemoveFromInput(input, _name);
         return DataResult<(TField, TFormat)>.Success((value.GetOrThrow(), input));
     }
 
-    public DataResult<TField> DecodeFromMap<TOps, TFormat>(TOps ops, ref FieldMap<TFormat> map)
+    public DataResult<TField> DecodeFromMap<TOps, TFormat>(ref FieldMap<TFormat> map)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        if (!map.TryGet(ops, _name, out var rawValue))
+        if (!map.TryGet<TOps>(_name, out var rawValue))
             return DataResult<TField>.Fail($"Missing required field: '{_name}'");
 
-        return _codec.Parse(ops, rawValue);
+        return _codec.Parse<TOps, TFormat>(rawValue);
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat accumulator)
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat accumulator)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         var value = _getter(input);
-        var encodedValue = _codec.EncodeStart<TOps, TFormat>(ops, value);
+        var encodedValue = _codec.EncodeStart<TOps, TFormat>(value);
 
         if (encodedValue.IsError)
             return encodedValue;
@@ -83,14 +89,15 @@ public readonly struct FieldCodec<T, TField> : IFieldCodec<T, TField>
             out var cached
         )
             ? (TFormat)cached
-            : CacheKey<TOps, TFormat>(ops);
-        return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+            : CacheKey<TOps, TFormat>();
+        return TOps.AddToMap(accumulator, key, encodedValue.GetOrThrow());
     }
 
-    private TFormat CacheKey<TOps, TFormat>(TOps ops)
+    private TFormat CacheKey<TOps, TFormat>()
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var converted = ops.CreateString(_name)!;
+        var converted = TOps.CreateString(_name)!;
         IFieldCodec<T, TField>.KeyCache[(typeof(TFormat), _name)] = converted;
         return converted;
     }
@@ -116,39 +123,42 @@ public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
         _defaultValue = defaultValue;
     }
 
-    public DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TField, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var fetchedValue = ops.GetValue(input, _name);
+        var fetchedValue = TOps.GetValue(input, _name);
         if (fetchedValue.IsError) // if the value was not present
             return DataResult<(TField, TFormat)>.Success((_defaultValue, input));
 
-        var value = _codec.Parse(ops, fetchedValue.GetOrThrow());
+        var value = _codec.Parse<TOps, TFormat>(fetchedValue.GetOrThrow());
         if (value.IsError) // if the value was found, but malformed
             return DataResult<(TField, TFormat)>.Fail(value.ErrorMessage);
 
-        input = ops.RemoveFromInput(input, _name);
+        input = TOps.RemoveFromInput(input, _name);
         return DataResult<(TField, TFormat)>.Success((value.GetOrThrow(), input));
     }
 
-    public DataResult<TField> DecodeFromMap<TOps, TFormat>(TOps ops, ref FieldMap<TFormat> map)
+    public DataResult<TField> DecodeFromMap<TOps, TFormat>(ref FieldMap<TFormat> map)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        if (!map.TryGet(ops, _name, out var rawValue))
+        if (!map.TryGet<TOps>(_name, out var rawValue))
             return DataResult<TField>.Success(_defaultValue);
 
-        return _codec.Parse(ops, rawValue);
+        return _codec.Parse<TOps, TFormat>(rawValue);
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat accumulator)
+    public DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat accumulator)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         var value = _getter(input);
 
         if (EqualityComparer<TField>.Default.Equals(value, _defaultValue))
             return DataResult<TFormat>.Success(accumulator); // don't encode the default value
 
-        var encodedValue = _codec.EncodeStart<TOps, TFormat>(ops, value);
+        var encodedValue = _codec.EncodeStart<TOps, TFormat>(value);
         if (encodedValue.IsError)
             return encodedValue;
 
@@ -157,14 +167,15 @@ public readonly struct OptionalFieldCodec<T, TField> : IFieldCodec<T, TField>
             out var cached
         )
             ? (TFormat)cached
-            : CacheKey<TOps, TFormat>(ops);
-        return ops.AddToMap(accumulator, key, encodedValue.GetOrThrow());
+            : CacheKey<TOps, TFormat>();
+        return TOps.AddToMap(accumulator, key, encodedValue.GetOrThrow());
     }
 
-    private TFormat CacheKey<TOps, TFormat>(TOps ops)
+    private TFormat CacheKey<TOps, TFormat>()
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var converted = ops.CreateString(_name)!;
+        var converted = TOps.CreateString(_name)!;
         IFieldCodec<T, TField>.KeyCache[(typeof(TFormat), _name)] = converted;
         return converted;
     }

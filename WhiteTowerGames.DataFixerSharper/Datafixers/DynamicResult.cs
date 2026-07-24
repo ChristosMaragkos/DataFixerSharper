@@ -2,14 +2,16 @@ using WhiteTowerGames.DataFixerSharper.Abstractions;
 
 namespace WhiteTowerGames.DataFixerSharper.Datafixers;
 
-public readonly struct DynamicResult<TFormat>
+public readonly struct DynamicResult<TOps, TFormat>
+    where TOps : IDynamicOps<TFormat>
+    where TFormat : struct
 {
-    private readonly DataResult<Dynamic<TFormat>> _result;
+    private readonly DataResult<Dynamic<TOps, TFormat>> _result;
     public bool IsError => _result.IsError;
     public string ErrorMessage => _result.ErrorMessage;
-    private Dynamic<TFormat> Data => _result.GetOrThrow();
+    private Dynamic<TOps, TFormat> Data => _result.GetOrThrow();
 
-    internal DynamicResult(DataResult<Dynamic<TFormat>> result)
+    internal DynamicResult(DataResult<Dynamic<TOps, TFormat>> result)
     {
         _result = result;
     }
@@ -17,7 +19,7 @@ public readonly struct DynamicResult<TFormat>
     /// <summary>
     /// Gets the value under <c>key</c> in the given object
     /// </summary>
-    public DynamicResult<TFormat> Get(string key)
+    public DynamicResult<TOps, TFormat> Get(string key)
     {
         if (IsError)
             return this;
@@ -28,7 +30,7 @@ public readonly struct DynamicResult<TFormat>
     /// <summary>
     /// Sets the value under <c>key</c> in the given object to a value. Fails entirely if the value is invalid.
     /// </summary>
-    public DynamicResult<TFormat> Set(string key, TFormat value)
+    public DynamicResult<TOps, TFormat> Set(string key, TFormat value)
     {
         if (IsError)
             return this;
@@ -39,12 +41,12 @@ public readonly struct DynamicResult<TFormat>
     /// Sets the value under <c>key</c> in the given object to a value. Simply skips if the value is invalid.
     /// </summary>
     [Obsolete("Use Set instead", true)]
-    public DynamicResult<TFormat> SetOptional(string key, TFormat value)
+    public DynamicResult<TOps, TFormat> SetOptional(string key, TFormat value)
     {
         return Set(key, value);
     }
 
-    public DynamicResult<TFormat> Rename(string oldKey, string newKey)
+    public DynamicResult<TOps, TFormat> Rename(string oldKey, string newKey)
     {
         if (IsError)
             return this;
@@ -56,8 +58,8 @@ public readonly struct DynamicResult<TFormat>
     /// Iterates over a list applying the updater function to each element. Then, returns a new list.
     /// Fails if the current value is not a list or if any element fails to update.
     /// </summary>
-    public DynamicResult<TFormat> UpdateList(
-        Func<Dynamic<TFormat>, DynamicResult<TFormat>> itemUpdater
+    public DynamicResult<TOps, TFormat> UpdateList(
+        Func<Dynamic<TOps, TFormat>, DynamicResult<TOps, TFormat>> itemUpdater
     )
     {
         if (IsError)
@@ -70,8 +72,8 @@ public readonly struct DynamicResult<TFormat>
     /// Iterates over a map applying the updater to each key-value pair. Then, returns a new map.
     /// Fails if the current value is not a valid map or any key-value pair fails to update properly.
     /// </summary>
-    public DynamicResult<TFormat> UpdateMap(
-        Func<string, Dynamic<TFormat>, DynamicResult<TFormat>> fieldUpdater
+    public DynamicResult<TOps, TFormat> UpdateMap(
+        Func<string, Dynamic<TOps, TFormat>, DynamicResult<TOps, TFormat>> fieldUpdater
     )
     {
         if (IsError)
@@ -79,30 +81,30 @@ public readonly struct DynamicResult<TFormat>
         return Data.UpdateMap(fieldUpdater);
     }
 
-    public DynamicResult<TFormat> Map(Func<Dynamic<TFormat>, DynamicResult<TFormat>> mapper) =>
+    public DynamicResult<TOps, TFormat> Map(Func<Dynamic<TOps, TFormat>, DynamicResult<TOps, TFormat>> mapper) =>
         _result.Map(mapper).GetOrElse(this);
 
-    public DynamicResult<TFormat> UnsafeMap(Func<Dynamic<TFormat>, DynamicResult<TFormat>> mapper)
+    public DynamicResult<TOps, TFormat> UnsafeMap(Func<Dynamic<TOps, TFormat>, DynamicResult<TOps, TFormat>> mapper)
     {
         if (IsError)
             return this;
         return mapper(Data);
     }
 
-    public Dynamic<TFormat> GetOrElse(Dynamic<TFormat> defaultValue) =>
+    public Dynamic<TOps, TFormat> GetOrElse(Dynamic<TOps, TFormat> defaultValue) =>
         !IsError ? Data : defaultValue;
 
-    public Dynamic<TFormat> GetOrThrow() =>
+    public Dynamic<TOps, TFormat> GetOrThrow() =>
         !IsError ? Data : throw new InvalidOperationException(ErrorMessage);
 
-    public static implicit operator DynamicResult<TFormat>(DataResult<Dynamic<TFormat>> result) =>
+    public static implicit operator DynamicResult<TOps, TFormat>(DataResult<Dynamic<TOps, TFormat>> result) =>
         new(result);
 
-    public static implicit operator DynamicResult<TFormat>(Dynamic<TFormat> data) => Success(data);
+    public static implicit operator DynamicResult<TOps, TFormat>(Dynamic<TOps, TFormat> data) => Success(data);
 
-    public static implicit operator Dynamic<TFormat>(DynamicResult<TFormat> result) =>
+    public static implicit operator Dynamic<TOps, TFormat>(DynamicResult<TOps, TFormat> result) =>
         result._result.GetOrThrow();
 
-    private static DynamicResult<TFormat> Success(Dynamic<TFormat> result) =>
-        new(DataResult<Dynamic<TFormat>>.Success(result));
+    private static DynamicResult<TOps, TFormat> Success(Dynamic<TOps, TFormat> result) =>
+        new(DataResult<Dynamic<TOps, TFormat>>.Success(result));
 }

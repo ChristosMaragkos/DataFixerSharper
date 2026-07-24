@@ -6,8 +6,6 @@ namespace WhiteTowerGames.DataFixerSharper.Tests.Primitives;
 
 public class PrimitiveCodecs
 {
-    private static readonly JsonOps JsonOps = JsonOps.Instance;
-
     [Fact]
     public void Int32_Builtin_Deterministic()
     {
@@ -15,8 +13,8 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Int32;
 
         // When
-        var encoded = codec.Encode(42, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(42, JsonOps.Empty()).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.Equal(42, decoded);
@@ -29,8 +27,8 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Int64;
 
         // When
-        var encoded = codec.Encode(42L, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(42L, JsonOps.Empty()).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.Equal(42, decoded);
@@ -43,8 +41,8 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Float;
 
         // When
-        var encoded = codec.Encode(42f, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(42f, JsonOps.Empty()).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.Equal(42f, decoded);
@@ -57,8 +55,8 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Double;
 
         // When
-        var encoded = codec.Encode(42d, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(42d, JsonOps.Empty()).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.Equal(42d, decoded);
@@ -71,8 +69,8 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.Bool;
 
         // When
-        var encoded = codec.Encode(true, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(true, JsonOps.Empty()).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.True(decoded);
@@ -85,8 +83,8 @@ public class PrimitiveCodecs
         var codec = BuiltinCodecs.String;
 
         // When
-        var encoded = codec.Encode("banana", JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>("banana", JsonOps.Empty()).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         // Then
         Assert.Equal("banana", decoded);
@@ -99,8 +97,8 @@ public class PrimitiveCodecs
         var codec = ICodec.Constant(42);
 
         // When
-        var encoded = codec.Encode(120, JsonOps, JsonOps.Empty()).GetOrThrow();
-        var decoded = codec.Parse(JsonOps, encoded).GetOrThrow();
+        var encoded = codec.Encode<JsonOps, JsonByteBuffer>(120, JsonOps.Empty()).GetOrThrow();
+        var decoded = codec.Parse<JsonOps, JsonByteBuffer>(encoded).GetOrThrow();
 
         Assert.Equal(Encoding.UTF8.GetBytes("{}"), encoded.Memory);
         Assert.Equal(42, decoded);

@@ -4,18 +4,20 @@ using WhiteTowerGames.DataFixerSharper.Schemas;
 
 namespace WhiteTowerGames.DataFixerSharper.Versioning;
 
-public class VersionStepBuilder<TFormat>
+public class VersionStepBuilder<TOps, TFormat>
+    where TOps : IDynamicOps<TFormat>
+    where TFormat : struct
 {
     private readonly Version _sinceVersion;
     private readonly Dictionary<string, ISchemaType> _fields;
-    private readonly List<Func<Dynamic<TFormat>, DynamicResult<TFormat>>> _rules = [];
-    private readonly TimelineBuilder<TFormat> _outerBuilder;
+    private readonly List<Func<Dynamic<TOps, TFormat>, DynamicResult<TOps, TFormat>>> _rules = [];
+    private readonly TimelineBuilder<TOps, TFormat> _outerBuilder;
     private readonly RecordSchema _inputSchema;
 
     internal VersionStepBuilder(
         Version sinceVersion,
         Dictionary<string, ISchemaType> currentFields,
-        TimelineBuilder<TFormat> outerBuilder,
+        TimelineBuilder<TOps, TFormat> outerBuilder,
         RecordSchema inputSchema
     )
     {
@@ -25,62 +27,62 @@ public class VersionStepBuilder<TFormat>
         _inputSchema = inputSchema;
     }
 
-    public VersionStepBuilder<TFormat> FieldAdded(
+    public VersionStepBuilder<TOps, TFormat> FieldAdded(
         string fieldName,
         ISchemaType fieldSchema,
         string defaultValue
     )
     {
         _fields[fieldName] = fieldSchema;
-        _rules.Add(dyn => dyn.Set(fieldName, dyn.Ops.CreateString(defaultValue)));
+        _rules.Add(dyn => dyn.Set(fieldName, TOps.CreateString(defaultValue)));
         return this;
     }
 
-    public VersionStepBuilder<TFormat> FieldAdded(
+    public VersionStepBuilder<TOps, TFormat> FieldAdded(
         string fieldName,
         ISchemaType fieldSchema,
         decimal defaultValue
     )
     {
         _fields[fieldName] = fieldSchema;
-        _rules.Add(dyn => dyn.Set(fieldName, dyn.Ops.CreateNumeric(defaultValue)));
+        _rules.Add(dyn => dyn.Set(fieldName, TOps.CreateNumeric(defaultValue)));
         return this;
     }
 
-    public VersionStepBuilder<TFormat> FieldAdded(
+    public VersionStepBuilder<TOps, TFormat> FieldAdded(
         string fieldName,
         ISchemaType fieldSchema,
         bool defaultValue
     )
     {
         _fields[fieldName] = fieldSchema;
-        _rules.Add(dyn => dyn.Set(fieldName, dyn.Ops.CreateBool(defaultValue)));
+        _rules.Add(dyn => dyn.Set(fieldName, TOps.CreateBool(defaultValue)));
         return this;
     }
 
-    public VersionStepBuilder<TFormat> FieldAdded(
+    public VersionStepBuilder<TOps, TFormat> FieldAdded(
         string fieldName,
         ISchemaType fieldSchema,
-        Func<IDynamicOps<TFormat>, TFormat> defaultValueFactory
+        Func<TFormat> defaultValueFactory
     )
     {
         _fields[fieldName] = fieldSchema;
         _rules.Add(dyn =>
         {
-            var newValue = defaultValueFactory(dyn.Ops);
+            var newValue = defaultValueFactory();
             return dyn.Set(fieldName, newValue);
         });
         return this;
     }
 
-    public VersionStepBuilder<TFormat> FieldRemoved(string fieldName)
+    public VersionStepBuilder<TOps, TFormat> FieldRemoved(string fieldName)
     {
         _fields.Remove(fieldName);
         _rules.Add(dyn => dyn.Remove(fieldName));
         return this;
     }
 
-    public VersionStepBuilder<TFormat> FieldRenamed(string oldName, string newName)
+    public VersionStepBuilder<TOps, TFormat> FieldRenamed(string oldName, string newName)
     {
         _fields[newName] = _fields[oldName];
         _fields.Remove(oldName);
@@ -88,19 +90,19 @@ public class VersionStepBuilder<TFormat>
         return this;
     }
 
-    public VersionStepBuilder<TFormat> CustomRule(
-        Func<Dynamic<TFormat>, DynamicResult<TFormat>> rule
+    public VersionStepBuilder<TOps, TFormat> CustomRule(
+        Func<Dynamic<TOps, TFormat>, DynamicResult<TOps, TFormat>> rule
     )
     {
         _rules.Add(rule);
         return this;
     }
 
-    public TimelineBuilder<TFormat> EndVersion()
+    public TimelineBuilder<TOps, TFormat> EndVersion()
     {
-        Func<Dynamic<TFormat>, DynamicResult<TFormat>> pipeline = input =>
+        Func<Dynamic<TOps, TFormat>, DynamicResult<TOps, TFormat>> pipeline = input =>
         {
-            DynamicResult<TFormat> currentData = DataResult<Dynamic<TFormat>>.Success(input);
+            DynamicResult<TOps, TFormat> currentData = DataResult<Dynamic<TOps, TFormat>>.Success(input);
 
             foreach (var rule in _rules)
             {
@@ -113,7 +115,7 @@ public class VersionStepBuilder<TFormat>
         };
 
         return _outerBuilder.AddVersion(
-            new SchemaDrivenFix<TFormat>(_sinceVersion, _inputSchema, pipeline),
+            new SchemaDrivenFix<TOps, TFormat>(_sinceVersion, _inputSchema, pipeline),
             _fields
         );
     }

@@ -22,16 +22,18 @@ internal readonly struct SafeMapCodec<TFrom, TTo> : ICodec<TTo>
         _from = from;
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        return _underlying.Encode(_from(input), ops, prefix);
+        return _underlying.Encode<TOps, TFormat>(_from(input), prefix);
     }
 
-    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var decoded = _underlying.Decode(ops, input);
+        var decoded = _underlying.Decode<TOps, TFormat>(input);
         if (decoded.IsError)
             return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
 
@@ -59,8 +61,9 @@ internal readonly struct UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
         _from = from;
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         var transformed = _from(input);
         if (transformed.IsError)
@@ -68,13 +71,14 @@ internal readonly struct UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
 
         var value = transformed.GetOrThrow();
 
-        return _underlying.Encode(value, ops, prefix);
+        return _underlying.Encode<TOps, TFormat>(value, prefix);
     }
 
-    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var decoded = _underlying.Decode(ops, input);
+        var decoded = _underlying.Decode<TOps, TFormat>(input);
         if (decoded.IsError)
             return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
 
@@ -105,8 +109,9 @@ internal readonly struct Safe2UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
         _from = from;
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         var transformed = _from(input);
         if (transformed.IsError)
@@ -114,13 +119,14 @@ internal readonly struct Safe2UnsafeMapCodec<TFrom, TTo> : ICodec<TTo>
 
         var value = transformed.GetOrThrow();
 
-        return _underlying.Encode(value, ops, prefix);
+        return _underlying.Encode<TOps, TFormat>(value, prefix);
     }
 
-    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var decoded = _underlying.Decode(ops, input);
+        var decoded = _underlying.Decode<TOps, TFormat>(input);
         if (decoded.IsError)
             return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
 
@@ -148,16 +154,18 @@ internal readonly struct Unsafe2SafeMapCodec<TFrom, TTo> : ICodec<TTo>
         _from = from;
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(TTo input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        return _underlying.Encode(_from(input), ops, prefix);
+        return _underlying.Encode<TOps, TFormat>(_from(input), prefix);
     }
 
-    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(TTo, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var decoded = _underlying.Decode(ops, input);
+        var decoded = _underlying.Decode<TOps, TFormat>(input);
         if (decoded.IsError)
             return DataResult<(TTo, TFormat)>.Fail(decoded.ErrorMessage);
 

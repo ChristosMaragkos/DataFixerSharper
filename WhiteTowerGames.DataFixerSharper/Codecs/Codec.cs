@@ -34,19 +34,23 @@ public interface ICodec
 
 public interface ICodec<T> : ICodec
 {
-    DataResult<(T, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
-        where TOps : IDynamicOps<TFormat>;
-
-    DataResult<TFormat> Encode<TOps, TFormat>(T input, TOps ops, TFormat prefix)
-        where TOps : IDynamicOps<TFormat>;
-
-    public DataResult<TFormat> EncodeStart<TOps, TFormat>(TOps ops, T input)
-        where TOps : IDynamicOps<TFormat> => Encode(input, ops, ops.Empty());
-
-    public DataResult<T> Parse<TOps, TFormat>(TOps ops, TFormat input)
+    DataResult<(T, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct;
+
+    DataResult<TFormat> Encode<TOps, TFormat>(T input, TFormat prefix)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct;
+
+    public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
+
+    public DataResult<T> Parse<TOps, TFormat>(TFormat input)
+        where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var parsed = Decode(ops, input);
+        var parsed = Decode<TOps, TFormat>(input);
         if (parsed.IsError)
             return DataResult<T>.Fail(parsed.ErrorMessage);
 

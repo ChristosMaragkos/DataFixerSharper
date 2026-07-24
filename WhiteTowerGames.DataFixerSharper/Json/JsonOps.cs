@@ -8,10 +8,6 @@ namespace WhiteTowerGames.DataFixerSharper.Json;
 
 public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 {
-    public static JsonOps Instance { get; } = new();
-
-    private JsonOps() { }
-
     [ThreadStatic]
     private static Stack<PooledJsonWriter>? _writerPool;
 
@@ -31,7 +27,6 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
 
     #region Pre-allocated strings
     private static readonly JsonByteBuffer EmptyValue = "{}"u8.ToArray(); // apparently c# lets you generate utf8-encoded strings. How long has this been a thing?
-    private static readonly JsonByteBuffer EmptyArrayValue = "[]"u8.ToArray();
     private static readonly JsonByteBuffer TrueValue = "true"u8.ToArray();
     private static readonly JsonByteBuffer FalseValue = "false"u8.ToArray();
 
@@ -52,7 +47,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #endregion
 
     #region Value Creation
-    public JsonByteBuffer Empty() => EmptyValue;
+    public static JsonByteBuffer Empty() => EmptyValue;
 
     // FIXME: This allocates way too eagerly.
     // It shoves a byte array on the heap for every integer we encode.
@@ -61,7 +56,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     // is 36 bytes. If you pad each of those to 8 bytes (which the GC does), we're sitting at about 100 bytes.
     // But each one of those 12 arrays also carries an object header which from my research is shown to be about
     // 24 bytes. 24 * 12 = 288 bytes, which brings us to about 400 bytes total.
-    public JsonByteBuffer CreateNumeric(decimal number)
+    public static JsonByteBuffer CreateNumeric(decimal number)
     {
         Span<byte> temp = stackalloc byte[32];
         if (!Utf8Formatter.TryFormat(number, temp, out var byteAmount))
@@ -73,14 +68,14 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(buffer);
     }
 
-    public JsonByteBuffer CreateString(string value) =>
+    public static JsonByteBuffer CreateString(string value) =>
         JsonSerializer.SerializeToUtf8Bytes(value, JsonStringContext.Default.String);
 
-    public JsonByteBuffer CreateBool(bool value) => value ? TrueValue : FalseValue;
+    public static JsonByteBuffer CreateBool(bool value) => value ? TrueValue : FalseValue;
     #endregion
 
     #region Value Reading
-    public DataResult<decimal> GetNumber(JsonByteBuffer input)
+    public static DataResult<decimal> GetNumber(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input, true, default);
         if (!reader.Read())
@@ -94,7 +89,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         };
     }
 
-    public DataResult<string> GetString(JsonByteBuffer input)
+    public static DataResult<string> GetString(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input, true, default);
         if (!reader.Read())
@@ -105,7 +100,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
             : DataResult<string>.Fail(StringNotFound);
     }
 
-    public DataResult<bool> GetBool(JsonByteBuffer input)
+    public static DataResult<bool> GetBool(JsonByteBuffer input)
     {
         var reader = new Utf8JsonReader(input);
         if (!reader.Read())
@@ -119,7 +114,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         };
     }
 
-    public DataResult<JsonByteBuffer> GetValue(JsonByteBuffer input, string name)
+    public static DataResult<JsonByteBuffer> GetValue(JsonByteBuffer input, string name)
     {
         var reader = new Utf8JsonReader(input, true, default);
 
@@ -145,14 +140,14 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #endregion
 
     #region Enumerables
-    public JsonByteBuffer CreateEmptyList()
+    public static JsonByteBuffer CreateEmptyList()
     {
         var writer = RentWriter();
         writer.Write(ArrayOpen);
         return new JsonByteBuffer(writer);
     }
 
-    public DataResult<JsonByteBuffer> AddToList(JsonByteBuffer list, JsonByteBuffer element)
+    public static DataResult<JsonByteBuffer> AddToList(JsonByteBuffer list, JsonByteBuffer element)
     {
         if (list.Writer == null)
             return DataResult<JsonByteBuffer>.Fail(ImmutableList);
@@ -167,7 +162,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<JsonByteBuffer>.Success(list); // we return a new struct, but it points to the same memory region as the other one.
     }
 
-    public DataResult<Unit> ReadList<TState, TCon>(
+    public static DataResult<Unit> ReadList<TState, TCon>(
         JsonByteBuffer input,
         ref TState state,
         TCon consumer
@@ -192,7 +187,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<Unit>.Success(default);
     }
 
-    public JsonByteBuffer FinalizeList(JsonByteBuffer list)
+    public static JsonByteBuffer FinalizeList(JsonByteBuffer list)
     {
         if (list.Writer == null)
             return list;
@@ -208,14 +203,14 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #endregion
 
     #region Maps
-    public JsonByteBuffer CreateEmptyMap()
+    public static JsonByteBuffer CreateEmptyMap()
     {
         var writer = RentWriter();
         writer.Write(ObjectOpen);
         return new JsonByteBuffer(writer);
     }
 
-    public DataResult<JsonByteBuffer> AddToMap(
+    public static DataResult<JsonByteBuffer> AddToMap(
         JsonByteBuffer map,
         JsonByteBuffer key,
         JsonByteBuffer value
@@ -235,7 +230,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<JsonByteBuffer>.Success(map);
     }
 
-    public DataResult<Unit> ReadMap<TState, TCon>(
+    public static DataResult<Unit> ReadMap<TState, TCon>(
         JsonByteBuffer input,
         ref TState state,
         TCon consumer
@@ -275,7 +270,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return DataResult<Unit>.Success(default);
     }
 
-    public JsonByteBuffer FinalizeMap(JsonByteBuffer map)
+    public static JsonByteBuffer FinalizeMap(JsonByteBuffer map)
     {
         if (map.Writer == null)
             return map;
@@ -290,7 +285,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
     #endregion
 
     #region Utils
-    public JsonByteBuffer AppendToPrefix(JsonByteBuffer prefix, JsonByteBuffer value)
+    public static JsonByteBuffer AppendToPrefix(JsonByteBuffer prefix, JsonByteBuffer value)
     {
         var finalizedValue = value;
 
@@ -323,7 +318,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return finalizedValue;
     }
 
-    public JsonByteBuffer RemoveFromInput(JsonByteBuffer input, string valueKey) => input; // mutating the input while decoding is useless since our lookups are by-key
+    public static JsonByteBuffer RemoveFromInput(JsonByteBuffer input, string valueKey) => input; // mutating the input while decoding is useless since our lookups are by-key
 
     private static bool IsEmptyJson(in JsonByteBuffer buffer)
     {
@@ -397,7 +392,7 @@ public sealed class JsonOps : IDynamicOps<JsonByteBuffer>
         return new JsonByteBuffer(merged);
     }
 
-    public bool StringsMatch(JsonByteBuffer key, string targetKey)
+    public static bool StringsMatch(JsonByteBuffer key, string targetKey)
     {
         var span = key.Memory.Span;
 

@@ -3,20 +3,16 @@ using WhiteTowerGames.DataFixerSharper.Versioning;
 
 namespace WhiteTowerGames.DataFixerSharper.Datafixers;
 
-public sealed class DataFixEngine<TFormat>
+public sealed class DataFixEngine<TOps, TFormat>
+    where TOps : IDynamicOps<TFormat>
+    where TFormat : struct
 {
-    private readonly IDynamicOps<TFormat> _ops;
     private readonly Dictionary<
         Type,
-        SortedDictionary<Version, List<IDataFix<TFormat>>>
+        SortedDictionary<Version, List<IDataFix<TOps, TFormat>>>
     > _timelines = [];
 
-    public DataFixEngine(IDynamicOps<TFormat> ops)
-    {
-        _ops = ops;
-    }
-
-    public void RegisterTimeline<TObj>(Timeline<TObj, TFormat> timeline)
+    public void RegisterTimeline<TObj>(Timeline<TObj, TOps, TFormat> timeline)
     {
         var objectType = typeof(TObj);
 
@@ -38,7 +34,7 @@ public sealed class DataFixEngine<TFormat>
         if (!_timelines.TryGetValue(objectType, out var typeFixes))
             return DataResult<TFormat>.Success(data);
 
-        var migrating = new Dynamic<TFormat>(_ops, data);
+        var migrating = new Dynamic<TOps, TFormat>(data);
         foreach (var (version, fixes) in typeFixes)
         {
             if (version <= fromVersion)

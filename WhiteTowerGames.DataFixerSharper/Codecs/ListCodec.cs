@@ -11,13 +11,14 @@ internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
         _underlying = underlying;
     }
 
-    public DataResult<(List<TElement>, TFormat)> Decode<TOps, TFormat>(TOps ops, TFormat input)
+    public DataResult<(List<TElement>, TFormat)> Decode<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         // make a list out of TFormat, accept every element in it, add it to our ref list.
-        var consumer = new ListConsumer<TOps, TFormat>(_underlying, ops);
+        var consumer = new ListConsumer<TOps, TFormat>(_underlying);
         var state = new DecodeState();
-        var listResult = ops.ReadList(input, ref state, consumer);
+        var listResult = TOps.ReadList(input, ref state, consumer);
 
         if (listResult.IsError) // was there any error parsing the encoded value?
             return DataResult<(List<TElement>, TFormat)>.Fail(listResult.ErrorMessage);
@@ -28,44 +29,44 @@ internal readonly struct ListCodec<TElement> : ICodec<List<TElement>>
         return DataResult<(List<TElement>, TFormat)>.Success((state.Elements, input));
     }
 
-    public DataResult<TFormat> Encode<TOps, TFormat>(List<TElement> input, TOps ops, TFormat prefix)
+    public DataResult<TFormat> Encode<TOps, TFormat>(List<TElement> input, TFormat prefix)
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
-        var list = DataResult<TFormat>.Success(ops.CreateEmptyList());
+        var list = DataResult<TFormat>.Success(TOps.CreateEmptyList());
         foreach (var item in input)
         {
-            var encoded = _underlying.EncodeStart<TOps, TFormat>(ops, item);
+            var encoded = _underlying.EncodeStart<TOps, TFormat>(item);
             if (encoded.IsError)
                 return encoded;
 
-            var appendedValue = ops.AddToList(list.GetOrThrow(), encoded.GetOrThrow());
+            var appendedValue = TOps.AddToList(list.GetOrThrow(), encoded.GetOrThrow());
             if (list.IsError)
                 return appendedValue;
 
             list = appendedValue;
         }
-        var finalValue = ops.AppendToPrefix(prefix, list.GetOrThrow());
+        var finalValue = TOps.AppendToPrefix(prefix, list.GetOrThrow());
         return DataResult<TFormat>.Success(finalValue);
     }
 
     private readonly struct ListConsumer<TOps, TFormat> : ICollectionConsumer<DecodeState, TFormat>
         where TOps : IDynamicOps<TFormat>
+        where TFormat : struct
     {
         private readonly ICodec<TElement> _underlyingCodec;
-        private readonly TOps _ops;
 
-        public ListConsumer(ICodec<TElement> underlyingCodec, TOps ops)
+        public ListConsumer(ICodec<TElement> underlyingCodec)
         {
             _underlyingCodec = underlyingCodec;
-            _ops = ops;
-        }
+            }
 
         public void Accept(ref DecodeState collection, TFormat item)
         {
             if (collection.IsError)
                 return;
 
-            var decoded = _underlyingCodec.Parse(_ops, item);
+            var decoded = _underlyingCodec.Parse<TOps, TFormat>(item);
             if (decoded.IsError)
                 collection.ErrorStatus = DataResult<Unit>.Fail(decoded.ErrorMessage);
             else
