@@ -54,7 +54,7 @@ public class CodecBenchmarks
                 )
     );
 
-    private static readonly ICodec<List<int>> IntegerArrayCodec = BuiltinCodecs.Int32.ForList();
+    private static readonly ICodec<IList<int>> IntegerArrayCodec = BuiltinCodecs.Int32.ForList();
     private static readonly List<int> Integers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
     //     [Benchmark]
@@ -116,7 +116,7 @@ public class CodecBenchmarks
     }
 
     private static readonly JsonByteBuffer MemoryPerson =
-        """{"Name":"John","Hobbies": ["Wow"], "Job": "Unemployed", "NumberOfFriends":0, "FavoriteFood":"McDonalds","Age":10}"""u8.ToArray();
+        """{"Name":"John","Hobbies": ["Wow"], "Job": "Unemployed", "NumberOfFriends":0, "FavoriteFood":"McDonalds","Age":40}"""u8.ToArray();
 
     private static readonly JsonByteBuffer MemoryIntegers =
         "[1,2,3,4,5,6,7,8,9,10,11,12]"u8.ToArray();
