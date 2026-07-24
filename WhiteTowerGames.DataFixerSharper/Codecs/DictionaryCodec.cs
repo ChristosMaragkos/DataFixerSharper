@@ -48,26 +48,20 @@ internal readonly struct DictionaryCodec<TKey, TValue> : ICodec<Dictionary<TKey,
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        var map = TOps.CreateEmptyMap();
+        TOps.WriteMapStart(prefix);
         foreach (var kvp in input)
         {
             var keyEnc = _keyCodec.EncodeStart<TOps, TFormat>(kvp.Key);
             if (keyEnc.IsError)
                 return keyEnc;
 
-            var valEnc = _valueCodec.EncodeStart<TOps, TFormat>(kvp.Value);
-            if (valEnc.IsError)
-                return valEnc;
-
-            var appended = TOps.AddToMap(map, keyEnc.GetOrThrow(), valEnc.GetOrThrow());
-            if (appended.IsError) // just in case
-                return appended;
-
-            map = appended.GetOrThrow();
+            TOps.WriteKey(prefix, keyEnc.GetOrThrow());
+            var valResult = _valueCodec.Encode<TOps, TFormat>(kvp.Value, prefix);
+            if (valResult.IsError)
+                return valResult;
         }
-
-        var finalPrefix = TOps.AppendToPrefix(prefix, map);
-        return DataResult<TFormat>.Success(finalPrefix);
+        TOps.WriteMapEnd(prefix);
+        return DataResult<TFormat>.Success(prefix);
     }
 
     private readonly struct DictConsumer<TOps, TFormat> : IMapConsumer<DecodeState, TFormat>

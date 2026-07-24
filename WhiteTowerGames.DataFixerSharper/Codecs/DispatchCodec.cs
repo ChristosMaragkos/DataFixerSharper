@@ -51,20 +51,23 @@ internal readonly struct DispatchCodec<TBase, TDis> : ICodec<TBase>
         where TFormat : struct
     {
         var discriminator = _discriminatorGetter(input);
-        var discrEncoded = _discriminatorCodec.EncodeStart<TOps, TFormat>(discriminator);
-        if (discrEncoded.IsError)
-            return discrEncoded;
-
-        var map = TOps.CreateEmptyMap();
         var typeKey = TOps.CreateString(_discriminatorKeyName);
 
-        var typedMap = TOps.AddToMap(map, typeKey, discrEncoded.GetOrThrow());
-        if (typedMap.IsError)
-            return typedMap;
-
-        var combinedPrefix = TOps.AppendToPrefix(prefix, typedMap.GetOrThrow());
+        var discBuf = TOps.CreateEmptyBuffer();
+        TOps.WriteMapStart(discBuf);
+        TOps.WriteKey(discBuf, typeKey);
+        var discrResult = _discriminatorCodec.Encode<TOps, TFormat>(discriminator, discBuf);
+        if (discrResult.IsError)
+            return discrResult;
+        TOps.WriteMapEnd(discBuf);
+        var discMap = TOps.FinalizeBuffer(discBuf);
 
         var innerCodec = _codecGetter(discriminator);
-        return innerCodec.Encode<TOps, TFormat>(input, combinedPrefix);
+        var innerResult = innerCodec.EncodeStart<TOps, TFormat>(input);
+        if (innerResult.IsError)
+            return innerResult;
+
+        var merged = TOps.AppendToPrefix(discMap, innerResult.GetOrThrow());
+        return DataResult<TFormat>.Success(TOps.AppendToPrefix(prefix, merged));
     }
 }

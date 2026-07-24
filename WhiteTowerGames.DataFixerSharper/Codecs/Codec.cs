@@ -44,7 +44,14 @@ public interface ICodec<T> : ICodec
 
     public DataResult<TFormat> EncodeStart<TOps, TFormat>(T input)
         where TOps : IDynamicOps<TFormat>
-        where TFormat : struct => Encode<TOps, TFormat>(input, TOps.Empty());
+        where TFormat : struct
+    {
+        var buf = TOps.CreateEmptyBuffer();
+        var result = Encode<TOps, TFormat>(input, buf);
+        return result.IsError
+            ? result
+            : DataResult<TFormat>.Success(TOps.FinalizeBuffer(result.GetOrThrow()));
+    }
 
     public DataResult<T> Parse<TOps, TFormat>(TFormat input)
         where TOps : IDynamicOps<TFormat>
@@ -57,31 +64,39 @@ public interface ICodec<T> : ICodec
         return DataResult<T>.Success(parsed.GetOrThrow().Item1);
     }
 
-    public ICodec<List<T>> ForList() => new ListCodec<T>(this);
+    public ICodec<IList<T>> ForList() => new ListCodec<T>(this);
 
     public ICodec<T[]> ForArray() =>
-        ForList().SafeMap<T[]>(array => array.ToList(), list => list.ToArray());
+        ForList().SafeMap<T[]>(array => array, list => list.ToArray());
 
     public ICodec<T> Conditional(Predicate<T> condition) =>
         new ConditionalCodec<T>(this, condition);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T <-> TOther always valid.
+    /// </summary>
     public ICodec<TOther> SafeMap<TOther>(Func<TOther, T> from, Func<T, TOther> to) =>
         new SafeMapCodec<T, TOther>(this, to, from);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T <-> TOther not always valid.
+    /// </summary>
     public ICodec<TOther> UnsafeMap<TOther>(
         Func<TOther, DataResult<T>> from,
         Func<T, DataResult<TOther>> to
     ) => new UnsafeMapCodec<T, TOther>(this, to, from);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when T -> TOther always valid.
+    /// </summary>
     public ICodec<TOther> Safe2UnsafeMap<TOther>(
         Func<TOther, DataResult<T>> from,
         Func<T, TOther> to
     ) => new Safe2UnsafeMapCodec<T, TOther>(this, to, from);
 
+    /// <summary>
     /// Creates a Codec<TOther> by converting TOther to T and vice versa when TOther -> T always valid.
+    /// </summary>
     public ICodec<TOther> Unsafe2SafeMap<TOther>(
         Func<TOther, T> from,
         Func<T, DataResult<TOther>> to
