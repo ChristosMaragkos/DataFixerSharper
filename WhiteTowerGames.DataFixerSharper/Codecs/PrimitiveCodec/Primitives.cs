@@ -19,7 +19,8 @@ internal class Int32Codec : ICodec<int>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateInt32<TOps, TFormat>(input));
+        TOps.WriteInteger(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -40,7 +41,8 @@ internal class UInt32Codec : ICodec<uint>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateUInt32<TOps, TFormat>(input));
+        TOps.WriteIntegerUnsigned(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -61,7 +63,8 @@ internal class Int64Codec : ICodec<long>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateInt64<TOps, TFormat>(input));
+        TOps.WriteInteger(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -82,7 +85,8 @@ internal class UInt64Codec : ICodec<ulong>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateUInt64<TOps, TFormat>(input));
+        TOps.WriteIntegerUnsigned(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -103,7 +107,8 @@ internal class FloatCodec : ICodec<float>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateFloat<TOps, TFormat>(input));
+        TOps.WriteDouble(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -124,7 +129,8 @@ internal class DoubleCodec : ICodec<double>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateDouble<TOps, TFormat>(input));
+        TOps.WriteDouble(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -145,7 +151,8 @@ internal class BoolCodec : ICodec<bool>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(TOps.CreateBool(input));
+        TOps.WriteBool(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -166,7 +173,8 @@ internal class StringCodec : ICodec<string>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(TOps.CreateString(input));
+        TOps.WriteString(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -187,7 +195,8 @@ internal class Int8Codec : ICodec<sbyte>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateInt8<TOps, TFormat>(input));
+        TOps.WriteInteger(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -208,7 +217,8 @@ internal class UInt8Codec : ICodec<byte>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateUInt8<TOps, TFormat>(input));
+        TOps.WriteIntegerUnsigned(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -229,7 +239,8 @@ internal class Int16Codec : ICodec<short>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateInt16<TOps, TFormat>(input));
+        TOps.WriteInteger(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
 
@@ -250,6 +261,7 @@ internal class UInt16Codec : ICodec<ushort>
         where TOps : IDynamicOps<TFormat>
         where TFormat : struct
     {
-        return DataResult<TFormat>.Success(DynamicOpsExtensions.CreateUInt16<TOps, TFormat>(input));
+        TOps.WriteIntegerUnsigned(prefix, input);
+        return DataResult<TFormat>.Success(prefix);
     }
 }
